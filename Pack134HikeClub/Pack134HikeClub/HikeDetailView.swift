@@ -193,9 +193,30 @@ struct AttendanceRow: View {
 
     var isAttending: Bool { attendance != nil }
 
+    var isCarryingBackpack: Bool {
+        attendance?.scoutQualitiesRaw.contains(.backpack) ?? false
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Toggle(scout.name, isOn: Binding(
+        HStack {
+            Text(scout.name)
+            Spacer()
+            if isAttending {
+                Button {
+                    guard let a = attendance else { return }
+                    if isCarryingBackpack {
+                        a.scoutQualitiesRaw.removeAll { $0 == .backpack }
+                    } else {
+                        a.scoutQualitiesRaw.append(.backpack)
+                    }
+                } label: {
+                    Text("🎒")
+                        .opacity(isCarryingBackpack ? 1.0 : 0.25)
+                }
+                .buttonStyle(.plain)
+            }
+            Spacer()
+            Toggle("", isOn: Binding(
                 get: { isAttending },
                 set: { newValue in
                     if newValue {
@@ -208,25 +229,8 @@ struct AttendanceRow: View {
                     }
                 }
             ))
-
-            if isAttending {
-                Toggle("Carrying Backpack", isOn: Binding(
-                    get: { attendance?.scoutQualitiesRaw.contains(.backpack) ?? false },
-                    set: { newValue in
-                        guard let a = attendance else { return }
-                        if newValue {
-                            if !a.scoutQualitiesRaw.contains(.backpack) {
-                                a.scoutQualitiesRaw.append(.backpack)
-                            }
-                        } else {
-                            a.scoutQualitiesRaw.removeAll { $0 == .backpack }
-                        }
-                    }
-                ))
-                .padding(.leading, 20)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            }
+            .labelsHidden()
+            .fixedSize()
         }
     }
 }
