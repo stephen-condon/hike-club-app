@@ -23,6 +23,7 @@ enum HikeQuality: String, Codable, CaseIterable {
     case parade          // Patriot: parade in uniform
     case unimproved      // Tricky Fox: dirt/grass trail
     case night           // Raven: dusk/night hike
+    case river           // River Runner: near water (pond/lake/river)
     // NOTE: 10-Mile Massacre is NOT here — it's derived from hike.mileage >= 10
 
     var badgeType: BadgeType {
@@ -36,6 +37,7 @@ enum HikeQuality: String, Codable, CaseIterable {
         case .parade:        return .patriot
         case .unimproved:    return .trickyFox
         case .night:         return .raven
+        case .river:         return .riverRunner
         }
     }
 }
@@ -51,6 +53,7 @@ enum BadgeType: String, Codable, CaseIterable {
     // Quality badges (from HikeQuality)
     case litterBug, polarBear, scorpion, mammoth, matterhorn
     case tenMileMassacre, hippopotamus, patriot, trickyFox, raven
+    case riverRunner = "river"
     // Scout quality badge
     case packMule
 
@@ -76,6 +79,7 @@ enum BadgeType: String, Codable, CaseIterable {
         case .patriot:         return "Patriot"
         case .trickyFox:       return "Tricky Fox"
         case .raven:           return "Raven"
+        case .riverRunner:     return "River Runner"
         case .packMule:        return "Pack Mule"
         }
     }
@@ -107,6 +111,7 @@ enum BadgeType: String, Codable, CaseIterable {
         case .patriot:      return .parade
         case .trickyFox:    return .unimproved
         case .raven:        return .night
+        case .riverRunner:  return .river
         default:            return nil
         }
     }
@@ -133,6 +138,7 @@ enum BadgeType: String, Codable, CaseIterable {
         case .patriot:         return .patriot
         case .trickyFox:       return .trickyFox
         case .raven:           return .raven
+        case .riverRunner:     return .riverRunner
         case .packMule:        return .packMule
         }
     }
@@ -144,6 +150,7 @@ enum InventoryKind: String, Codable, CaseIterable {
     case mile60, mile70, mile80, mile90, mile100
     case litterBug, polarBear, scorpion, mammoth, matterhorn
     case tenMileMassacre, hippopotamus, patriot, trickyFox, raven
+    case riverRunner = "river"
     case packMule
     case hikingStick
 }

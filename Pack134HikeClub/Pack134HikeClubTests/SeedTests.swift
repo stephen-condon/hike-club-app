@@ -61,6 +61,14 @@ struct ParseRosterTests {
         #expect(scouts[0].seededEarnedBadges.contains(.polarBear))
     }
 
+    @Test func riverTokenParsesToRiverRunner() {
+        let csv = "name,mileage,badges\nGibson,18.5,river;mile10"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 1)
+        #expect(scouts[0].seededEarnedBadges.contains(.riverRunner))
+        #expect(scouts[0].seededEarnedBadges.contains(.mile10))
+    }
+
     @Test func unknownBadgeRawValueDropped() {
         let csv = "name,mileage,badges\nFrank,0.0,unknownBadge;mile10"
         let scouts = Seed.parseRoster(csv)

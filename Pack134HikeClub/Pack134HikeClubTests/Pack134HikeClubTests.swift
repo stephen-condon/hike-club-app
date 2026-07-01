@@ -52,7 +52,15 @@ struct AwardsTests {
         #expect(badges.filter { $0 == .polarBear }.count == 1)
     }
 
-    // 3. Scout wears a backpack → packMule earned
+    // 3. Attending a river hike → riverRunner earned
+    @Test func riverRunnerEarnedFromRiverHike() {
+        let scout = Scout(name: "Eve")
+        let hike = Hike(title: "River Hike", status: .complete, mileage: 2, qualitiesRaw: [.river])
+        attend(scout, hike)
+        #expect(scout.earnedBadges(completedHikes: [hike]).contains(.riverRunner))
+    }
+
+    // 4. Scout wears a backpack → packMule earned
     @Test func packMuleEarnedWithBackpack() {
         let scout = Scout(name: "Carol")
         let hike = Hike(title: "Pack Hike", status: .complete, mileage: 3)
@@ -63,7 +71,7 @@ struct AwardsTests {
         #expect(badges.contains(.packMule))
     }
 
-    // 4. Hike mileage exactly 10.0 → tenMileMassacre earned
+    // 5. Hike mileage exactly 10.0 → tenMileMassacre earned
     @Test func tenMileMassacreEarnedAtExactlyTenMiles() {
         let scout = Scout(name: "Dan")
         let hike = Hike(title: "10-Miler", status: .complete, mileage: 10.0)
@@ -74,7 +82,7 @@ struct AwardsTests {
         #expect(badges.contains(.tenMileMassacre))
     }
 
-    // 5. Hike mileage 9.9 → tenMileMassacre NOT earned
+    // 6. Hike mileage 9.9 → tenMileMassacre NOT earned
     @Test func tenMileMassacreNotEarnedBelowTenMiles() {
         let scout = Scout(name: "Eve")
         let hike = Hike(title: "9.9-Miler", status: .complete, mileage: 9.9)
@@ -85,7 +93,7 @@ struct AwardsTests {
         #expect(!badges.contains(.tenMileMassacre))
     }
 
-    // 6. Archived (isActive: false) scout — Awards derivation still works correctly
+    // 7. Archived (isActive: false) scout — Awards derivation still works correctly
     @Test func archivedScoutStillDerivesAwards() {
         let scout = Scout(name: "Frank", isActive: false)
         let hike = Hike(title: "Old Hike", status: .complete, mileage: 12, qualitiesRaw: [.cold])

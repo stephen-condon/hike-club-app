@@ -20,6 +20,7 @@ struct HikeQualityTests {
         #expect(HikeQuality.parade.badgeType == .patriot)
         #expect(HikeQuality.unimproved.badgeType == .trickyFox)
         #expect(HikeQuality.night.badgeType == .raven)
+        #expect(HikeQuality.river.badgeType == .riverRunner)
     }
 }
 
@@ -72,6 +73,7 @@ struct BadgeTypeTests {
         #expect(BadgeType.patriot.hikeQuality == .parade)
         #expect(BadgeType.trickyFox.hikeQuality == .unimproved)
         #expect(BadgeType.raven.hikeQuality == .night)
+        #expect(BadgeType.riverRunner.hikeQuality == .river)
     }
 
     @Test func hikeQualityNilForNonQualityBadges() {
