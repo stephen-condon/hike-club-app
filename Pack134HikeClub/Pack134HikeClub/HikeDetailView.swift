@@ -222,6 +222,7 @@ struct AttendanceRow: View {
                     if newValue {
                         let a = Attendance(hike: hike, scout: scout)
                         context.insert(a)
+                        hike.attendances.append(a)
                     } else {
                         if let a = attendance {
                             context.delete(a)
