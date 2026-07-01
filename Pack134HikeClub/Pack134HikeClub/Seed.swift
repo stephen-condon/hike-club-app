@@ -23,7 +23,7 @@ enum Seed {
 
     /// Parses CSV roster contents (with header row) into `Scout` objects.
     /// The header row is skipped; blank lines are ignored.
-    /// Columns: name, startingMileage (optional), badges (optional, `;`-separated rawValues).
+    /// Columns: name, startingMileage (optional), badges (optional, `;`-separated rawValues), hasStick (optional, `1` = has stick).
     static func parseRoster(_ contents: String) -> [Scout] {
         let lines = contents.components(separatedBy: .newlines)
         var scouts: [Scout] = []
@@ -43,15 +43,21 @@ enum Seed {
             } else {
                 seededEarnedBadges = []
             }
+            let hasStick = columns.count > 3 &&
+                columns[3].trimmingCharacters(in: .whitespaces) == "1"
 
-            scouts.append(Scout(
+            let scout = Scout(
                 name: name,
                 startingMileage: startingMileage,
                 isActive: true,
                 dateAdded: .now,
                 seededEarnedBadges: seededEarnedBadges,
                 givenBadges: []
-            ))
+            )
+            if hasStick {
+                scout.stickAssignment = StickAssignment(scout: scout)
+            }
+            scouts.append(scout)
         }
         return scouts
     }
@@ -64,6 +70,7 @@ enum Seed {
 
         for scout in parseRoster(contents) {
             context.insert(scout)
+            if let assignment = scout.stickAssignment { context.insert(assignment) }
         }
     }
 

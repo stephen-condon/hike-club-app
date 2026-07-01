@@ -99,6 +99,34 @@ struct ParseRosterTests {
         #expect(scouts.count == 1)
         #expect(scouts[0].isActive == true)
     }
+
+    @Test func hasStickColumnOneCreatesAssignment() {
+        let csv = "name,mileage,badges,hasStick\nIvy,0.0,,1"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 1)
+        #expect(scouts[0].stickAssignment != nil)
+    }
+
+    @Test func hasStickColumnBlankNoAssignment() {
+        let csv = "name,mileage,badges,hasStick\nJack,0.0,,"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 1)
+        #expect(scouts[0].stickAssignment == nil)
+    }
+
+    @Test func hasStickColumnMissingNoAssignment() {
+        let csv = "name,mileage,badges\nKate,0.0,"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 1)
+        #expect(scouts[0].stickAssignment == nil)
+    }
+
+    @Test func hasStickNonOneValueNoAssignment() {
+        let csv = "name,mileage,badges,hasStick\nLeo,0.0,,0\nMia,0.0,,true\nNed,0.0,,yes"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 3)
+        #expect(scouts.allSatisfy { $0.stickAssignment == nil })
+    }
 }
 
 // MARK: - Seed.seedIfNeeded
