@@ -1,0 +1,9 @@
+excluded:
+  - Pack134HikeClub.xcodeproj
+  - build
+
+disabled_rules:
+  - force_try  # ponytail: SwiftData ModelContainer init legitimately uses try!
+
+identifier_name:
+  min_length: 1  # allow single-letter closure params and short test vars
