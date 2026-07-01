@@ -201,8 +201,7 @@ struct AttendanceRow: View {
         HStack {
             Text(scout.name)
             Spacer()
-            if isAttending {
-                Button {
+            Button {
                     guard let a = attendance else { return }
                     if isCarryingBackpack {
                         a.scoutQualitiesRaw.removeAll { $0 == .backpack }
@@ -211,11 +210,10 @@ struct AttendanceRow: View {
                     }
                 } label: {
                     Text("🎒")
-                        .opacity(isCarryingBackpack ? 1.0 : 0.25)
+                        .opacity(isAttending ? (isCarryingBackpack ? 1.0 : 0.25) : 0)
                 }
                 .buttonStyle(.plain)
-            }
-            Spacer()
+                .disabled(!isAttending)
             Toggle("", isOn: Binding(
                 get: { isAttending },
                 set: { newValue in
