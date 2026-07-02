@@ -59,6 +59,7 @@ struct ParseRosterTests {
         #expect(scouts.count == 1)
         #expect(scouts[0].seededEarnedBadges.contains(.mile10))
         #expect(scouts[0].seededEarnedBadges.contains(.polarBear))
+        #expect(scouts[0].givenBadges == scouts[0].seededEarnedBadges)
     }
 
     @Test func riverTokenParsesToRiverRunner() {
@@ -67,6 +68,7 @@ struct ParseRosterTests {
         #expect(scouts.count == 1)
         #expect(scouts[0].seededEarnedBadges.contains(.riverRunner))
         #expect(scouts[0].seededEarnedBadges.contains(.mile10))
+        #expect(scouts[0].givenBadges == scouts[0].seededEarnedBadges)
     }
 
     @Test func unknownBadgeRawValueDropped() {
@@ -76,6 +78,22 @@ struct ParseRosterTests {
         #expect(scouts[0].seededEarnedBadges.count == 1)
         #expect(scouts[0].seededEarnedBadges.contains(.mile10))
         #expect(!scouts[0].seededEarnedBadges.contains(where: { $0.rawValue == "unknownBadge" }))
+    }
+
+    @Test func csvBadgesSeededAsEarnedAndGiven() {
+        let csv = "name,mileage,badges\nJack,15.0,mile10"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 1)
+        let scout = scouts[0]
+        #expect(scout.seededEarnedBadges == [.mile10])
+        #expect(scout.givenBadges == [.mile10])
+    }
+
+    @Test func noBadgesProducesEmptyGivenBadges() {
+        let csv = "name,mileage,badges\nKate,0.0,"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 1)
+        #expect(scouts[0].givenBadges.isEmpty)
     }
 
     @Test func nonNumericMileageBecomesZero() {

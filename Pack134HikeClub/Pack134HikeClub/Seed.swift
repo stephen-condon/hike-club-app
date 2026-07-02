@@ -52,7 +52,7 @@ enum Seed {
                 isActive: true,
                 dateAdded: .now,
                 seededEarnedBadges: seededEarnedBadges,
-                givenBadges: []
+                givenBadges: seededEarnedBadges
             )
             if hasStick {
                 scout.stickAssignment = StickAssignment(scout: scout)
