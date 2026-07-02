@@ -59,7 +59,7 @@ struct ParseRosterTests {
         #expect(scouts.count == 1)
         #expect(scouts[0].seededEarnedBadges.contains(.mile10))
         #expect(scouts[0].seededEarnedBadges.contains(.polarBear))
-        #expect(scouts[0].givenBadges == scouts[0].seededEarnedBadges)
+        #expect(scouts[0].givenBadges.isEmpty)
     }
 
     @Test func riverTokenParsesToRiverRunner() {
@@ -68,7 +68,7 @@ struct ParseRosterTests {
         #expect(scouts.count == 1)
         #expect(scouts[0].seededEarnedBadges.contains(.riverRunner))
         #expect(scouts[0].seededEarnedBadges.contains(.mile10))
-        #expect(scouts[0].givenBadges == scouts[0].seededEarnedBadges)
+        #expect(scouts[0].givenBadges.isEmpty)
     }
 
     @Test func unknownBadgeRawValueDropped() {
@@ -80,13 +80,13 @@ struct ParseRosterTests {
         #expect(!scouts[0].seededEarnedBadges.contains(where: { $0.rawValue == "unknownBadge" }))
     }
 
-    @Test func csvBadgesSeededAsEarnedAndGiven() {
+    @Test func csvBadgesSeededAsEarnedNotGiven() {
         let csv = "name,mileage,badges\nJack,15.0,mile10"
         let scouts = Seed.parseRoster(csv)
         #expect(scouts.count == 1)
         let scout = scouts[0]
         #expect(scout.seededEarnedBadges == [.mile10])
-        #expect(scout.givenBadges == [.mile10])
+        #expect(scout.givenBadges.isEmpty)
     }
 
     @Test func noBadgesProducesEmptyGivenBadges() {
@@ -126,32 +126,51 @@ struct ParseRosterTests {
         #expect(scouts[0].isActive == true)
     }
 
-    @Test func hasStickColumnOneCreatesAssignment() {
-        let csv = "name,mileage,badges,hasStick\nIvy,0.0,,1"
+    @Test func stickColumnHasCreatesAssignmentAndEarned() {
+        let csv = "name,mileage,badges,stick\nIvy,0.0,,has"
         let scouts = Seed.parseRoster(csv)
         #expect(scouts.count == 1)
         #expect(scouts[0].stickAssignment != nil)
+        #expect(scouts[0].stickEarned)
     }
 
-    @Test func hasStickColumnBlankNoAssignment() {
-        let csv = "name,mileage,badges,hasStick\nJack,0.0,,"
+    @Test func stickColumnEarnedIsEarnedButNotAssigned() {
+        let csv = "name,mileage,badges,stick\nZoe,0.0,,earned"
         let scouts = Seed.parseRoster(csv)
         #expect(scouts.count == 1)
         #expect(scouts[0].stickAssignment == nil)
+        #expect(scouts[0].stickEarned)
     }
 
-    @Test func hasStickColumnMissingNoAssignment() {
+    @Test func stickColumnBlankNeitherEarnedNorAssigned() {
+        let csv = "name,mileage,badges,stick\nJack,0.0,,"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 1)
+        #expect(scouts[0].stickAssignment == nil)
+        #expect(!scouts[0].stickEarned)
+    }
+
+    @Test func stickColumnMissingNeitherEarnedNorAssigned() {
         let csv = "name,mileage,badges\nKate,0.0,"
         let scouts = Seed.parseRoster(csv)
         #expect(scouts.count == 1)
         #expect(scouts[0].stickAssignment == nil)
+        #expect(!scouts[0].stickEarned)
     }
 
-    @Test func hasStickNonOneValueNoAssignment() {
-        let csv = "name,mileage,badges,hasStick\nLeo,0.0,,0\nMia,0.0,,true\nNed,0.0,,yes"
+    @Test func stickColumnCaseInsensitive() {
+        let csv = "name,mileage,badges,stick\nMia,0.0,,HAS\nNed,0.0,,Earned"
         let scouts = Seed.parseRoster(csv)
-        #expect(scouts.count == 3)
-        #expect(scouts.allSatisfy { $0.stickAssignment == nil })
+        #expect(scouts.count == 2)
+        #expect(scouts[0].stickAssignment != nil && scouts[0].stickEarned)
+        #expect(scouts[1].stickAssignment == nil && scouts[1].stickEarned)
+    }
+
+    @Test func stickColumnUnknownValueNeitherEarnedNorAssigned() {
+        let csv = "name,mileage,badges,stick\nLeo,0.0,,1\nOwen,0.0,,yes"
+        let scouts = Seed.parseRoster(csv)
+        #expect(scouts.count == 2)
+        #expect(scouts.allSatisfy { $0.stickAssignment == nil && !$0.stickEarned })
     }
 }
 

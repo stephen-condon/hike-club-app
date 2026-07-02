@@ -167,6 +167,8 @@ class Scout {
     var seededEarnedBadges: [BadgeType]
     // Physically handed out (inventory-decrementing); append to award, remove to un-give
     var givenBadges: [BadgeType]
+    // Stick earned (ceremony decision) but not necessarily awarded; stickAssignment != nil means awarded
+    var stickEarned: Bool = false
     @Relationship(deleteRule: .cascade) var attendances: [Attendance]
     @Relationship(deleteRule: .nullify) var stickAssignment: StickAssignment?
 
@@ -176,7 +178,8 @@ class Scout {
         isActive: Bool = true,
         dateAdded: Date = .now,
         seededEarnedBadges: [BadgeType] = [],
-        givenBadges: [BadgeType] = []
+        givenBadges: [BadgeType] = [],
+        stickEarned: Bool = false
     ) {
         self.name = name
         self.startingMileage = startingMileage
@@ -184,6 +187,7 @@ class Scout {
         self.dateAdded = dateAdded
         self.seededEarnedBadges = seededEarnedBadges
         self.givenBadges = givenBadges
+        self.stickEarned = stickEarned
         self.attendances = []
         self.stickAssignment = nil
     }

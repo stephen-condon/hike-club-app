@@ -82,12 +82,12 @@ struct ScoutDetailView: View {
                         Text("Return Stick")
                     }
                 } else {
-                    Text("Not assigned")
+                    Text(scout.stickEarned ? "Earned — not yet awarded" : "Not earned")
                         .foregroundStyle(.secondary)
                     Button {
                         assignStick()
                     } label: {
-                        Text("Assign Stick")
+                        Text("Award Stick")
                     }
                 }
             }

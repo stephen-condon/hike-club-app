@@ -31,6 +31,7 @@ extension Scout {
         let assignment = StickAssignment(scout: self)
         context.insert(assignment)
         stickAssignment = assignment
+        stickEarned = true
         if let item = inventory.first(where: { $0.kind == .hikingStick }) {
             item.count = max(0, item.count - 1)
         }
