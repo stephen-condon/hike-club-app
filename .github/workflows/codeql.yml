@@ -28,10 +28,15 @@ jobs:
           languages: swift
           build-mode: manual
 
+      - name: Select simulator
+        run: |
+          NAME=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | test("^iPhone"))][0].name')
+          echo "SIMULATOR_NAME=$NAME" >> "$GITHUB_ENV"
+
       - name: Build
         run: |
           xcodebuild -scheme Pack134HikeClub \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "platform=iOS Simulator,name=$SIMULATOR_NAME" \
             build
 
       - name: Perform CodeQL Analysis
