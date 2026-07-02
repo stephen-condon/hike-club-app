@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: Pack134HikeClub
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: sudo xcode-select -s $(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+
+      - name: SwiftLint
+        run: |
+          brew install swiftlint
+          swiftlint lint --strict
+
+      - name: Build and test
+        run: |
+          xcodebuild test \
+            -scheme Pack134HikeClub \
+            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: Pack134HikeClub/TestResults.xcresult
