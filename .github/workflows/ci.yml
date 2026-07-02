@@ -23,11 +23,16 @@ jobs:
           brew install swiftlint
           swiftlint lint --strict
 
+      - name: Select simulator
+        run: |
+          NAME=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | test("^iPhone"))][0].name')
+          echo "SIMULATOR_NAME=$NAME" >> "$GITHUB_ENV"
+
       - name: Build and test
         run: |
           xcodebuild test \
             -scheme Pack134HikeClub \
-            -destination 'platform=iOS Simulator,name=iPhone 17' \
+            -destination "platform=iOS Simulator,name=$SIMULATOR_NAME" \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
 
