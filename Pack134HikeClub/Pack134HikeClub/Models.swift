@@ -265,3 +265,33 @@ class StickAssignment {
         self.dateAssigned = dateAssigned
     }
 }
+
+@Model
+class Ceremony {
+    var title: String
+    var date: Date
+    var isComplete: Bool
+    // Historical snapshot of what was actually handed out here, populated on completion.
+    @Relationship(deleteRule: .cascade) var awards: [CeremonyAward]
+
+    init(title: String, date: Date = .now, isComplete: Bool = false) {
+        self.title = title
+        self.date = date
+        self.isComplete = isComplete
+        self.awards = []
+    }
+}
+
+@Model
+class CeremonyAward {
+    var ceremony: Ceremony?
+    @Relationship(deleteRule: .nullify) var scout: Scout?
+    var badges: [BadgeType]
+    var stickGiven: Bool
+
+    init(scout: Scout, badges: [BadgeType] = [], stickGiven: Bool = false) {
+        self.scout = scout
+        self.badges = badges
+        self.stickGiven = stickGiven
+    }
+}

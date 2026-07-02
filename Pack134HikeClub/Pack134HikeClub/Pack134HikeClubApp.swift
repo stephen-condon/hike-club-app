@@ -16,7 +16,9 @@ struct Pack134HikeClubApp: App {
             Hike.self,
             Attendance.self,
             InventoryItem.self,
-            StickAssignment.self
+            StickAssignment.self,
+            Ceremony.self,
+            CeremonyAward.self
         ])
         return try! ModelContainer(for: schema)
     }()

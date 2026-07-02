@@ -14,6 +14,7 @@ private func makeContainer() throws -> ModelContainer {
     return try ModelContainer(
         for: Scout.self, Hike.self, Attendance.self,
             InventoryItem.self, StickAssignment.self,
+            Ceremony.self, CeremonyAward.self,
         configurations: config
     )
 }

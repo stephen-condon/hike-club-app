@@ -19,6 +19,8 @@ struct ContentView: View {
                     .tabItem { Label("Scouts", systemImage: "person.3") }
                 InventoryView()
                     .tabItem { Label("Inventory", systemImage: "shippingbox") }
+                CeremoniesView()
+                    .tabItem { Label("Ceremonies", systemImage: "medal") }
             }
             if showSplash {
                 SplashView()
