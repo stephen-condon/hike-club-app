@@ -117,30 +117,8 @@ enum BadgeType: String, Codable, CaseIterable {
     }
 
     var inventoryKind: InventoryKind {
-        switch self {
-        case .mile10:          return .mile10
-        case .mile20:          return .mile20
-        case .mile30:          return .mile30
-        case .mile40:          return .mile40
-        case .mile50:          return .mile50
-        case .mile60:          return .mile60
-        case .mile70:          return .mile70
-        case .mile80:          return .mile80
-        case .mile90:          return .mile90
-        case .mile100:         return .mile100
-        case .litterBug:       return .litterBug
-        case .polarBear:       return .polarBear
-        case .scorpion:        return .scorpion
-        case .mammoth:         return .mammoth
-        case .matterhorn:      return .matterhorn
-        case .tenMileMassacre: return .tenMileMassacre
-        case .hippopotamus:    return .hippopotamus
-        case .patriot:         return .patriot
-        case .trickyFox:       return .trickyFox
-        case .raven:           return .raven
-        case .riverRunner:     return .riverRunner
-        case .packMule:        return .packMule
-        }
+        // rawValues are aligned 1:1 by construction (including riverRunner == "river" on both enums)
+        InventoryKind(rawValue: rawValue)!
     }
 }
 
@@ -153,6 +131,12 @@ enum InventoryKind: String, Codable, CaseIterable {
     case riverRunner = "river"
     case packMule
     case hikingStick
+}
+
+extension InventoryKind {
+    var displayName: String {
+        self == .hikingStick ? "Hiking Stick" : (BadgeType(rawValue: rawValue)?.displayName ?? rawValue)
+    }
 }
 
 // MARK: - @Model Classes

@@ -124,13 +124,9 @@ struct InventoryNeedRow: View {
     let onHand: Int
     let shortfall: CeremonyShortfall?
 
-    var displayName: String {
-        kind == .hikingStick ? "Hiking Stick" : (BadgeType(rawValue: kind.rawValue)?.displayName ?? kind.rawValue)
-    }
-
     var body: some View {
         HStack {
-            Text(displayName)
+            Text(kind.displayName)
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text("Need \(need) · Have \(onHand)")
