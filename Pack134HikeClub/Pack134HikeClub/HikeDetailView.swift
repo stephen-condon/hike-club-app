@@ -112,9 +112,12 @@ struct HikeDetailView: View {
                                 .multilineTextAlignment(.trailing)
                                 .frame(width: 80)
                                 .onChange(of: mileageText) { _, newValue in
-                                    if let value = Double(newValue) {
+                                    if newValue.isEmpty {
+                                        hike.mileage = 0
+                                    } else if let value = Double(newValue) {
                                         hike.mileage = value
                                     }
+                                    // Partial/invalid non-empty text: keep the last valid mileage
                                 }
                             Text("mi")
                                 .foregroundStyle(.secondary)
