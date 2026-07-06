@@ -10,7 +10,6 @@ concurrency:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   release:
@@ -23,16 +22,4 @@ jobs:
       - name: Tag + GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx --yes -p semantic-release -p @semantic-release/exec semantic-release
-
-      - name: Open PR to sync app version
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.RELEASE_PAT }}
-          commit-message: "chore(release): sync app version in Xcode project"
-          branch: chore/sync-release-version
-          delete-branch: true
-          title: "chore(release): sync app version in Xcode project"
-          body: >
-            Auto-generated after a semantic-release run to keep MARKETING_VERSION/CURRENT_PROJECT_VERSION
-            in project.pbxproj matching the latest tagged release.
+        run: npx --yes -p semantic-release semantic-release
