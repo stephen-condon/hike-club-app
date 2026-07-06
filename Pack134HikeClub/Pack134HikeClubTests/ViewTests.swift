@@ -139,44 +139,33 @@ struct NewScoutSheetTests {
     }
 }
 
-// MARK: - InventoryRow.displayName / MinReserveSheet.displayName
+// MARK: - InventoryKind.displayName
 
 struct InventoryDisplayNameTests {
 
     @Test func hikingStickDisplaysCorrectly() {
-        let item = InventoryItem(kind: .hikingStick, count: 0, minReserve: 0)
-        let row = InventoryRow(item: item, onEditMinReserve: { })
-        #expect(row.displayName == "Hiking Stick")
+        #expect(InventoryKind.hikingStick.displayName == "Hiking Stick")
     }
 
     @Test func badgeKindUsesDisplayName() {
-        let item = InventoryItem(kind: .mile10, count: 0, minReserve: 0)
-        let row = InventoryRow(item: item, onEditMinReserve: { })
-        #expect(row.displayName == "10 Mile")
+        #expect(InventoryKind.mile10.displayName == "10 Mile")
     }
 
     @Test func polarBearDisplayName() {
-        let item = InventoryItem(kind: .polarBear, count: 0, minReserve: 0)
-        let row = InventoryRow(item: item, onEditMinReserve: { })
-        #expect(row.displayName == "Polar Bear")
+        #expect(InventoryKind.polarBear.displayName == "Polar Bear")
     }
 
     @Test func packMuleDisplayName() {
-        let item = InventoryItem(kind: .packMule, count: 0, minReserve: 0)
-        let row = InventoryRow(item: item, onEditMinReserve: { })
-        #expect(row.displayName == "Pack Mule")
+        #expect(InventoryKind.packMule.displayName == "Pack Mule")
     }
 
-    @Test func minReserveSheetHikingStickDisplayName() {
-        let item = InventoryItem(kind: .hikingStick, count: 0, minReserve: 0)
-        let sheet = MinReserveSheet(item: item)
-        #expect(sheet.displayName == "Hiking Stick")
+    @Test func riverRunnerDisplayName() {
+        // riverRunner rawValue is "river" on both enums — the bridge must still resolve
+        #expect(InventoryKind.riverRunner.displayName == "River Runner")
     }
 
-    @Test func minReserveSheetBadgeDisplayName() {
-        let item = InventoryItem(kind: .raven, count: 0, minReserve: 0)
-        let sheet = MinReserveSheet(item: item)
-        #expect(sheet.displayName == "Raven")
+    @Test func ravenDisplayName() {
+        #expect(InventoryKind.raven.displayName == "Raven")
     }
 }
 
