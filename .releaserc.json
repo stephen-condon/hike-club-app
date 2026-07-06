@@ -3,9 +3,6 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
-    ["@semantic-release/exec", {
-      "prepareCmd": "sed -i -e \"s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = ${nextRelease.version};/g\" -e \"s/CURRENT_PROJECT_VERSION = [^;]*;/CURRENT_PROJECT_VERSION = $GITHUB_RUN_NUMBER;/g\" Pack134HikeClub/Pack134HikeClub.xcodeproj/project.pbxproj"
-    }],
     "@semantic-release/github"
   ]
 }
