@@ -107,8 +107,7 @@ struct BadgeActionsTests {
         #expect(item.count == 3)
     }
 
-    @Test func ungiveBadgeBadgeAbsentStillIncrementsInventory() throws {
-        // Original behavior: inventory increments even if badge wasn't in givenBadges
+    @Test func ungiveBadgeBadgeAbsentLeavesInventoryUnchanged() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
 
@@ -120,7 +119,23 @@ struct BadgeActionsTests {
         scout.ungiveBadge(.polarBear, inventory: [item])
 
         #expect(scout.givenBadges.isEmpty)
-        #expect(item.count == 3)
+        #expect(item.count == 2)
+    }
+
+    @Test func giveBadgeTwiceIsIdempotent() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+
+        let scout = Scout(name: "Gus")
+        let item = InventoryItem(kind: .polarBear, count: 5, minReserve: 0)
+        ctx.insert(scout)
+        ctx.insert(item)
+
+        scout.giveBadge(.polarBear, inventory: [item])
+        scout.giveBadge(.polarBear, inventory: [item])
+
+        #expect(scout.givenBadges.filter { $0 == .polarBear }.count == 1)
+        #expect(item.count == 4)
     }
 
     @Test func giveThenUngiveBadgeRestoresInventory() throws {

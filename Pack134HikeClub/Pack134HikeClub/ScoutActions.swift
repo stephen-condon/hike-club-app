@@ -9,7 +9,9 @@ import SwiftData
 extension Scout {
 
     /// Appends `badge` to `givenBadges` and decrements the matching inventory item (floor 0).
+    /// Giving an already-given badge is a no-op (no duplicate entry, no double decrement).
     func giveBadge(_ badge: BadgeType, inventory: [InventoryItem]) {
+        guard !givenBadges.contains(badge) else { return }
         givenBadges.append(badge)
         if let item = inventory.first(where: { $0.kind == badge.inventoryKind }) {
             item.count = max(0, item.count - 1)
@@ -17,10 +19,10 @@ extension Scout {
     }
 
     /// Removes the first occurrence of `badge` from `givenBadges` and increments the inventory item.
+    /// If the badge wasn't given, this is a no-op (inventory is untouched).
     func ungiveBadge(_ badge: BadgeType, inventory: [InventoryItem]) {
-        if let idx = givenBadges.firstIndex(of: badge) {
-            givenBadges.remove(at: idx)
-        }
+        guard let idx = givenBadges.firstIndex(of: badge) else { return }
+        givenBadges.remove(at: idx)
         if let item = inventory.first(where: { $0.kind == badge.inventoryKind }) {
             item.count += 1
         }
