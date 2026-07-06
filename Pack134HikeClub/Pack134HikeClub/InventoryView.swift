@@ -66,15 +66,10 @@ struct InventoryRow: View {
     @Bindable var item: InventoryItem
     let onEditMinReserve: () -> Void
 
-    var displayName: String {
-        if item.kind == .hikingStick { return "Hiking Stick" }
-        return BadgeType(rawValue: item.kind.rawValue)?.displayName ?? item.kind.rawValue
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
-                Text(displayName)
+                Text(item.kind.displayName)
                     .font(.headline)
                 Spacer()
                 Button {
@@ -132,18 +127,13 @@ struct MinReserveSheet: View {
     @Bindable var item: InventoryItem
     @Environment(\.dismiss) private var dismiss
 
-    var displayName: String {
-        if item.kind == .hikingStick { return "Hiking Stick" }
-        return BadgeType(rawValue: item.kind.rawValue)?.displayName ?? item.kind.rawValue
-    }
-
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     Stepper("Min Reserve: \(item.minReserve)", value: $item.minReserve, in: 0...999)
                 } header: {
-                    Text(displayName)
+                    Text(item.kind.displayName)
                 } footer: {
                     Text("A warning appears when inventory falls below this number.")
                 }
