@@ -67,11 +67,13 @@ struct CeremonyDetailView: View {
                 }
             } else {
                 Section("Inventory Readiness") {
-                    if needs.isEmpty {
+                    let kinds = Set(needs.keys).union(shortfalls.map(\.kind))
+                        .sorted { $0.rawValue < $1.rawValue }
+                    if kinds.isEmpty {
                         Text("No pending awards")
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(needs.keys.sorted(by: { $0.rawValue < $1.rawValue }), id: \.self) { kind in
+                        ForEach(kinds, id: \.self) { kind in
                             InventoryNeedRow(
                                 kind: kind,
                                 need: needs[kind] ?? 0,

@@ -242,6 +242,15 @@ struct CeremonyShortfallsTests {
         let shortfalls = ceremonyShortfalls(needs: [.mile10: 3], inventory: [])
         #expect(shortfalls.isEmpty)
     }
+
+    @Test func flagsBelowReserveWithNoPendingNeed() {
+        let item = InventoryItem(kind: .mile10, count: 0, minReserve: 2)
+        let shortfalls = ceremonyShortfalls(needs: [:], inventory: [item])
+        #expect(shortfalls.count == 1)
+        #expect(shortfalls[0].kind == .mile10)
+        #expect(shortfalls[0].need == 0)
+        #expect(shortfalls[0].buy == 2) // 0 + 2 - 0
+    }
 }
 
 // MARK: - completeCeremony

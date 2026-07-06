@@ -72,10 +72,11 @@ struct CeremonyShortfall: Equatable {
 
 /// Flags kinds where handing out `needs` would drop on-hand below that item's minReserve.
 func ceremonyShortfalls(needs: [InventoryKind: Int], inventory: [InventoryItem]) -> [CeremonyShortfall] {
-    needs.compactMap { kind, need -> CeremonyShortfall? in
-        guard let item = inventory.first(where: { $0.kind == kind }) else { return nil }
+    inventory.compactMap { item -> CeremonyShortfall? in
+        let need = needs[item.kind] ?? 0
         guard item.count - need < item.minReserve else { return nil }
-        return CeremonyShortfall(kind: kind, need: need, onHand: item.count, buy: need + item.minReserve - item.count)
+        return CeremonyShortfall(kind: item.kind, need: need, onHand: item.count,
+                                 buy: need + item.minReserve - item.count)
     }
     .sorted { $0.kind.rawValue < $1.kind.rawValue }
 }
