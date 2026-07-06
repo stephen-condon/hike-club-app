@@ -14,6 +14,7 @@ struct ScoutsView: View {
     @Query(filter: #Predicate<Scout> { !$0.isActive }, sort: \Scout.name) var archivedScouts: [Scout]
     @Query var allHikes: [Hike]
     @State private var showingNewScout = false
+    @AppStorage("showArchivedScouts") private var showArchived = false
 
     func completedHikes(for scout: Scout) -> [Hike] {
         scout.completedHikes(from: allHikes)
@@ -28,7 +29,7 @@ struct ScoutsView: View {
                     }
                 }
 
-                if !archivedScouts.isEmpty {
+                if showArchived && !archivedScouts.isEmpty {
                     Section("Archived") {
                         ForEach(archivedScouts) { scout in
                             NavigationLink(destination: ScoutDetailView(scout: scout)) {
@@ -41,6 +42,15 @@ struct ScoutsView: View {
             }
             .navigationTitle("Scouts")
             .toolbar {
+                if !archivedScouts.isEmpty {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button {
+                            showArchived.toggle()
+                        } label: {
+                            Image(systemName: showArchived ? "eye.slash" : "eye")
+                        }
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         showingNewScout = true
