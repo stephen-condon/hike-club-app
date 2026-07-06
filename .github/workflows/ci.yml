@@ -28,7 +28,20 @@ jobs:
 
       - name: Select simulator
         run: |
-          NAME=$(xcrun simctl list devices available -j | jq -r '[.devices[][] | select(.name | test("^iPhone"))][0].name')
+          # Pick the destination from xcodebuild's own view — simctl can list devices
+          # whose runtime the selected Xcode can't actually use as a test destination.
+          first_iphone_destination() {
+            xcodebuild -scheme Pack134HikeClub -showdestinations 2>/dev/null \
+              | sed -n 's/.*platform:iOS Simulator.*name:\(iPhone[^,}]*\).*/\1/p' | head -1 | xargs
+          }
+          NAME=$(first_iphone_destination)
+          if [ -z "$NAME" ]; then
+            # Runner image shipped without a usable iOS runtime for this Xcode — install it
+            sudo xcodebuild -runFirstLaunch
+            sudo xcodebuild -downloadPlatform iOS
+            NAME=$(first_iphone_destination)
+          fi
+          [ -n "$NAME" ] || { echo "::error::No iPhone simulator destination available"; exit 1; }
           echo "SIMULATOR_NAME=$NAME" >> "$GITHUB_ENV"
 
       - name: Build and test
