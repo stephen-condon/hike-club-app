@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import HealthKit
 
 // MARK: - HikeDetailView
 
@@ -14,6 +15,9 @@ struct HikeDetailView: View {
     @Query(filter: #Predicate<Scout> { $0.isActive }, sort: \Scout.name) var scouts: [Scout]
 
     @State private var mileageText: String = ""
+    @State private var importMessage: String?
+    @State private var workoutChoices: [HKWorkout] = []
+    @State private var showingChoices = false
 
     var isEditable: Bool {
         hike.status == .inProgress || hike.status == .recap
@@ -122,8 +126,21 @@ struct HikeDetailView: View {
                             Text("mi")
                                 .foregroundStyle(.secondary)
                         }
+                        if HealthImport.isAvailable {
+                            Button {
+                                Task { await importFromHealth() }
+                            } label: {
+                                Label("Import from Health", systemImage: "heart.fill")
+                            }
+                        }
                     } else {
                         LabeledContent("Mileage", value: String(format: "%.1f mi", hike.mileage))
+                    }
+
+                    // Elevation gain — read-only, shown once imported
+                    if let gain = hike.elevationGain {
+                        LabeledContent("Elevation gain",
+                                       value: "\(gain.formatted(.number.precision(.fractionLength(0)))) ft")
                     }
 
                     // Notes
@@ -155,6 +172,49 @@ struct HikeDetailView: View {
         .onAppear {
             mileageText = hike.mileage == 0 ? "" : String(hike.mileage)
         }
+        .confirmationDialog("Choose workout", isPresented: $showingChoices, titleVisibility: .visible) {
+            ForEach(workoutChoices, id: \.uuid) { workout in
+                Button(workoutLabel(workout)) { apply(workout) }
+            }
+        }
+        .alert("Import from Health",
+               isPresented: Binding(get: { importMessage != nil },
+                                    set: { if !$0 { importMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importMessage ?? "")
+        }
+    }
+
+    // MARK: Health import
+
+    private func importFromHealth() async {
+        do {
+            try await HealthImport.requestAuthorization()
+            let workouts = try await HealthImport.hikingWorkouts(on: hike.date)
+            switch workouts.count {
+            case 0:  importMessage = "No hiking workout found for this date."
+            case 1:  apply(workouts[0])
+            default:
+                workoutChoices = workouts
+                showingChoices = true
+            }
+        } catch {
+            importMessage = "Couldn't read Health data."
+        }
+    }
+
+    private func apply(_ workout: HKWorkout) {
+        let imported = WorkoutImport(workout: workout)
+        hike.mileage = imported.mileage
+        hike.elevationGain = imported.elevationGain
+        mileageText = imported.mileage == 0 ? "" : String(imported.mileage)
+    }
+
+    private func workoutLabel(_ workout: HKWorkout) -> String {
+        let time = workout.startDate.formatted(date: .omitted, time: .shortened)
+        let miles = milesRoundedToHalf(meters: workout.totalDistance?.doubleValue(for: .meter()) ?? 0)
+        return "\(time) — \(String(format: "%.1f", miles)) mi"
     }
 
     // MARK: State machine button
