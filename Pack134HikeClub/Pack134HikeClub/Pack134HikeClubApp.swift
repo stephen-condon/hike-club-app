@@ -29,6 +29,11 @@ struct Pack134HikeClubApp: App {
                 .modelContainer(container)
                 .onAppear {
                     Seed.seedIfNeeded(context: container.mainContext)
+                    Task {
+                        await CeremonyReminders.requestAuthorization()
+                        let ceremonies = (try? container.mainContext.fetch(FetchDescriptor<Ceremony>())) ?? []
+                        CeremonyReminders.reschedule(ceremonies)
+                    }
                 }
         }
     }

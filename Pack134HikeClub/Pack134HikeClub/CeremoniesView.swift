@@ -62,6 +62,11 @@ struct CeremoniesView: View {
             .sheet(isPresented: $showingNewCeremony) {
                 NewCeremonySheet()
             }
+            // ponytail: reschedule on tab appear covers create/edit/delete/complete when the user
+            // returns here; add per-mutation calls only if instant cross-tab accuracy is ever needed.
+            .onAppear {
+                CeremonyReminders.reschedule(ceremonies)
+            }
         }
     }
 }
