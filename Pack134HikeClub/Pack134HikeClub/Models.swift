@@ -183,6 +183,8 @@ class Hike {
     var date: Date
     var status: HikeStatus
     var mileage: Double
+    // Feet, nil until imported from a HealthKit hiking workout
+    var elevationGain: Double?
     // Store as array for SwiftData compatibility (treat as set in logic)
     var qualitiesRaw: [HikeQuality]
     var notes: String
@@ -195,6 +197,7 @@ class Hike {
         date: Date = .now,
         status: HikeStatus = .planned,
         mileage: Double = 0,
+        elevationGain: Double? = nil,
         qualitiesRaw: [HikeQuality] = [],
         notes: String = ""
     ) {
@@ -202,6 +205,7 @@ class Hike {
         self.date = date
         self.status = status
         self.mileage = mileage
+        self.elevationGain = elevationGain
         self.qualitiesRaw = qualitiesRaw
         self.notes = notes
         self.attendances = []
