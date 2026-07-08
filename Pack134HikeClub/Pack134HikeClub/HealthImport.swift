@@ -52,8 +52,8 @@ enum HealthImport {
         try await store.requestAuthorization(toShare: [], read: [HKObjectType.workoutType()])
     }
 
-    /// Hiking workouts recorded on the same calendar day as `date`, newest first.
     // ponytail: same-day filter; widen to a ±1 day window if hikes ever span midnight.
+    /// Hiking workouts recorded on the same calendar day as `date`, newest first.
     static func hikingWorkouts(on date: Date, calendar: Calendar = .current) async throws -> [HKWorkout] {
         guard isAvailable else { return [] }
         let dayStart = calendar.startOfDay(for: date)
@@ -61,7 +61,7 @@ enum HealthImport {
 
         let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             HKQuery.predicateForWorkouts(with: .hiking),
-            HKQuery.predicateForSamples(withStart: dayStart, end: dayEnd, options: .strictStartDate),
+            HKQuery.predicateForSamples(withStart: dayStart, end: dayEnd, options: .strictStartDate)
         ])
         let descriptor = HKSampleQueryDescriptor(
             predicates: [.workout(predicate)],
