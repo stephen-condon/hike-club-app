@@ -10,15 +10,40 @@ import SwiftData
 
 struct HikesView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Hike.date, order: .reverse) var hikes: [Hike]
+    @Query(sort: \Hike.date) var hikes: [Hike]
     @State private var showingNewHike = false
+
+    // Upcoming/active hikes soonest first; completed hikes most recent first (mirrors CeremoniesView).
+    var upcoming: [Hike] {
+        hikes.filter { $0.status != .complete }.sorted { $0.date < $1.date }
+    }
+
+    var completed: [Hike] {
+        hikes.filter { $0.status == .complete }.sorted { $0.date > $1.date }
+    }
 
     var body: some View {
         NavigationStack {
             List {
-                ForEach(hikes) { hike in
-                    NavigationLink(destination: HikeDetailView(hike: hike)) {
-                        HikeRow(hike: hike)
+                Section("Upcoming") {
+                    if upcoming.isEmpty {
+                        Text("No hikes scheduled")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(upcoming) { hike in
+                            NavigationLink(destination: HikeDetailView(hike: hike)) {
+                                HikeRow(hike: hike)
+                            }
+                        }
+                    }
+                }
+                if !completed.isEmpty {
+                    Section("Completed") {
+                        ForEach(completed) { hike in
+                            NavigationLink(destination: HikeDetailView(hike: hike)) {
+                                HikeRow(hike: hike)
+                            }
+                        }
                     }
                 }
             }
