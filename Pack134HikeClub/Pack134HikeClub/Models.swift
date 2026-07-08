@@ -192,6 +192,15 @@ class Hike {
 
     var qualities: Set<HikeQuality> { Set(qualitiesRaw) }
 
+    // Matterhorn is earned for hikes with at least this much elevation gain.
+    static let matterhornElevationFeet = 100.0
+
+    /// True when imported elevation clears the Matterhorn threshold. nil elevation (not imported) → false.
+    static func earnsMatterhorn(elevationFeet: Double?) -> Bool {
+        guard let feet = elevationFeet else { return false }
+        return feet >= matterhornElevationFeet
+    }
+
     init(
         title: String,
         date: Date = .now,
