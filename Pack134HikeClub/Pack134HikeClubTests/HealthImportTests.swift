@@ -43,3 +43,24 @@ struct FeetFromMetersTests {
         #expect(feet(fromMeters: 0) == 0)
     }
 }
+
+// MARK: - Hike.earnsMatterhorn
+
+struct EarnsMatterhornTests {
+
+    @Test func notImportedDoesNotEarn() {
+        #expect(Hike.earnsMatterhorn(elevationFeet: nil) == false)
+    }
+
+    @Test func belowThresholdDoesNotEarn() {
+        #expect(Hike.earnsMatterhorn(elevationFeet: 99) == false)
+    }
+
+    @Test func atThresholdEarns() {
+        #expect(Hike.earnsMatterhorn(elevationFeet: 100) == true)
+    }
+
+    @Test func aboveThresholdEarns() {
+        #expect(Hike.earnsMatterhorn(elevationFeet: 250) == true)
+    }
+}

@@ -162,7 +162,9 @@ struct HikeDetailView: View {
                 // MARK: Quality toggles
                 Section("Qualities") {
                     ForEach(HikeQuality.allCases, id: \.self) { quality in
-                        QualityRow(hike: hike, quality: quality, isEditable: isEditable)
+                        // ponytail: elevationGain != nil == "imported"; only source that sets it is Health import
+                        let locked = quality == .elevation && hike.elevationGain != nil
+                        QualityRow(hike: hike, quality: quality, isEditable: isEditable && !locked)
                     }
                 }
             }
@@ -208,6 +210,11 @@ struct HikeDetailView: View {
         let imported = WorkoutImport(workout: workout)
         hike.mileage = imported.mileage
         hike.elevationGain = imported.elevationGain
+        // Imported elevation drives Matterhorn: set the quality from the data instead of by hand.
+        hike.qualitiesRaw.removeAll { $0 == .elevation }
+        if Hike.earnsMatterhorn(elevationFeet: hike.elevationGain) {
+            hike.qualitiesRaw.append(.elevation)
+        }
         mileageText = imported.mileage == 0 ? "" : String(imported.mileage)
     }
 
