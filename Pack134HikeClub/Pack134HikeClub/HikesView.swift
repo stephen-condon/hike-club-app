@@ -12,6 +12,7 @@ struct HikesView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Hike.date) var hikes: [Hike]
     @State private var showingNewHike = false
+    @State private var hikeToDelete: Hike?
 
     // Upcoming/active hikes soonest first; completed hikes most recent first (mirrors CeremoniesView).
     var upcoming: [Hike] {
@@ -44,6 +45,9 @@ struct HikesView: View {
                                 HikeRow(hike: hike)
                             }
                         }
+                        .onDelete { offsets in
+                            hikeToDelete = offsets.first.map { completed[$0] }
+                        }
                     }
                 }
             }
@@ -59,6 +63,18 @@ struct HikesView: View {
             }
             .sheet(isPresented: $showingNewHike) {
                 NewHikeSheet()
+            }
+            .alert("Delete this hike?", isPresented: Binding(
+                get: { hikeToDelete != nil },
+                set: { if !$0 { hikeToDelete = nil } }
+            ), presenting: hikeToDelete) { hike in
+                Button("Delete", role: .destructive) {
+                    context.delete(hike)
+                    hikeToDelete = nil
+                }
+                Button("Cancel", role: .cancel) { hikeToDelete = nil }
+            } message: { hike in
+                Text("\"\(hike.title)\" will be removed and its attendees' mileage and badges recalculated.")
             }
         }
     }
