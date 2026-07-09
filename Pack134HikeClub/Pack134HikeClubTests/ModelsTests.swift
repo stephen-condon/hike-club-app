@@ -4,6 +4,7 @@
 //
 
 import Testing
+import SwiftData
 @testable import Pack134HikeClub
 
 // MARK: - HikeQuality.badgeType
@@ -107,6 +108,42 @@ struct HikeModelTests {
     @Test func qualitiesEmptyWhenNoRawQualities() {
         let hike = Hike(title: "Test", qualitiesRaw: [])
         #expect(hike.qualities.isEmpty)
+    }
+}
+
+// MARK: - Hike deletion (cascade + derived data)
+
+@MainActor
+struct HikeDeletionTests {
+
+    private func makeContainer() throws -> ModelContainer {
+        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        return try ModelContainer(
+            for: Scout.self, Hike.self, Attendance.self,
+            configurations: config
+        )
+    }
+
+    @Test func deletingHikeCascadesAttendanceAndLowersCumulativeMileage() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+
+        let scout = Scout(name: "Alice", startingMileage: 10)
+        let hike = Hike(title: "Test Hike", status: .complete, mileage: 5)
+        let attendance = Attendance(hike: hike, scout: scout)
+        ctx.insert(scout)
+        ctx.insert(hike)
+        ctx.insert(attendance)
+        try ctx.save()
+
+        #expect(scout.cumulativeMileage(completedHikes: [hike]) == 15)
+
+        ctx.delete(hike)
+        try ctx.save()
+
+        let remainingAttendances = try ctx.fetch(FetchDescriptor<Attendance>())
+        #expect(remainingAttendances.isEmpty)
+        #expect(scout.cumulativeMileage(completedHikes: []) == 10)
     }
 }
 
