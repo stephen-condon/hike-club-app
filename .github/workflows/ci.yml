@@ -33,7 +33,16 @@ jobs:
             xcodebuild -scheme Pack134HikeClub -showdestinations 2>/dev/null \
               | sed -n 's/.*platform:iOS Simulator.*name:\(iPhone[^,}]*\).*/\1/p' | head -1 | xargs
           }
-          NAME=$(first_iphone_destination)
+          # CoreSimulatorService is often still cold-starting on a fresh runner, which makes
+          # the first -showdestinations call fail with "Unable to connect to simulator".
+          # Touch simctl once to warm it, then retry the real query a couple of times.
+          xcrun simctl list devices >/dev/null 2>&1 || true
+          NAME=""
+          for _ in 1 2 3; do
+            NAME=$(first_iphone_destination)
+            [ -n "$NAME" ] && break
+            sleep 5
+          done
           if [ -z "$NAME" ]; then
             # Runner image shipped without a usable iOS runtime for this Xcode — install it
             sudo xcodebuild -runFirstLaunch
