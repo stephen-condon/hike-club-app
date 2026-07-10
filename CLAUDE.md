@@ -28,7 +28,9 @@ xcodebuild test -scheme Pack134HikeClub -destination 'platform=iOS Simulator,nam
   -only-testing:Pack134HikeClubTests/AwardsTests/mileageBadgesAtTwentyFiveMiles
 ```
 
-Or open `Pack134HikeClub.xcodeproj` in Xcode and use Cmd+U / the diamond next to a test. There is no lint/format tooling configured yet.
+Or open `Pack134HikeClub.xcodeproj` in Xcode and use Cmd+U / the diamond next to a test. SwiftLint is configured (`Pack134HikeClub/.swiftlint.yml`) and CI runs `swiftlint lint --strict` as a gate before tests; run it locally with `swiftlint lint --strict` from `Pack134HikeClub/`.
+
+Commits on `main` drive `semantic-release` (`.releaserc.json`, `.github/workflows/release.yml`) — use conventional commit prefixes (`feat:`, `fix:`, `chore:`, etc.) so versioning and release notes stay accurate.
 
 ## Architecture
 
