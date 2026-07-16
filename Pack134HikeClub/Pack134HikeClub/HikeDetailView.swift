@@ -60,6 +60,26 @@ struct HikeDetailView: View {
                             .font(.caption)
                     }
                 }
+
+                // Hike API ID — editable while planned, read-only once set otherwise
+                if hike.status == .planned {
+                    TextField("Hike API ID (optional)", text: Binding(
+                        get: { hike.apiHikeID ?? "" },
+                        set: { newValue in
+                            let trimmed = newValue.trimmingCharacters(in: .whitespaces)
+                            hike.apiHikeID = trimmed.isEmpty ? nil : trimmed
+                        }
+                    ))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                } else if let apiID = hike.apiHikeID {
+                    LabeledContent("Hike API ID", value: apiID)
+                }
+            }
+
+            // MARK: Trail Info — fetched from the API when the hike is linked
+            if let apiID = hike.apiHikeID {
+                TrailInfoView(apiHikeID: apiID)
             }
 
             // MARK: State machine transition

@@ -188,6 +188,8 @@ class Hike {
     // Store as array for SwiftData compatibility (treat as set in logic)
     var qualitiesRaw: [HikeQuality]
     var notes: String
+    // Matching hike id in the Hike Club API; nil = not linked. Drives the Trail Info fetch.
+    var apiHikeID: String?
     @Relationship(deleteRule: .cascade) var attendances: [Attendance]
 
     var qualities: Set<HikeQuality> { Set(qualitiesRaw) }
@@ -208,7 +210,8 @@ class Hike {
         mileage: Double = 0,
         elevationGain: Double? = nil,
         qualitiesRaw: [HikeQuality] = [],
-        notes: String = ""
+        notes: String = "",
+        apiHikeID: String? = nil
     ) {
         self.title = title
         self.date = date
@@ -217,6 +220,7 @@ class Hike {
         self.elevationGain = elevationGain
         self.qualitiesRaw = qualitiesRaw
         self.notes = notes
+        self.apiHikeID = apiHikeID
         self.attendances = []
     }
 }
