@@ -143,6 +143,7 @@ struct NewHikeSheet: View {
 
     @State private var title = ""
     @State private var date = Date()
+    @State private var apiHikeID = ""
 
     static func isSaveDisabled(title: String) -> Bool {
         title.trimmingCharacters(in: .whitespaces).isEmpty
@@ -159,6 +160,11 @@ struct NewHikeSheet: View {
                     TextField("Title", text: $title)
                     DatePicker("Date", selection: $date, displayedComponents: .date)
                 }
+                Section("Trail Info") {
+                    TextField("Hike API ID (optional)", text: $apiHikeID)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                }
             }
             .navigationTitle("New Hike")
             .navigationBarTitleDisplayMode(.inline)
@@ -168,12 +174,14 @@ struct NewHikeSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
+                        let trimmedID = apiHikeID.trimmingCharacters(in: .whitespaces)
                         let hike = Hike(
                             title: title.trimmingCharacters(in: .whitespaces),
                             date: date,
                             status: .planned,
                             mileage: 0,
-                            notes: ""
+                            notes: "",
+                            apiHikeID: trimmedID.isEmpty ? nil : trimmedID
                         )
                         context.insert(hike)
                         dismiss()
