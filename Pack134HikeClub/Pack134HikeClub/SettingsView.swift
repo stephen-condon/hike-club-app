@@ -20,6 +20,12 @@ struct SettingsView: View {
         baseURL.isEmpty || URL(string: baseURL)?.scheme == "https"
     }
 
+    private var locationCacheStatus: String {
+        let count = HikeAPI.cachedLocations().count
+        guard count > 0, let at = HikeAPI.locationsFetchedAt else { return "none" }
+        return "\(count) · \(at.formatted(date: .abbreviated, time: .omitted))"
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -59,6 +65,15 @@ struct SettingsView: View {
                             message = "API key removed."
                         }
                     }
+                }
+
+                Section("Trail Locations") {
+                    LabeledContent("Cached", value: locationCacheStatus)
+                    Button("Clear cached locations", role: .destructive) {
+                        HikeAPI.clearLocationsCache()
+                        message = "Cached locations cleared."
+                    }
+                    .disabled(HikeAPI.cachedLocations().isEmpty)
                 }
             }
             .navigationTitle("Settings")

@@ -18,6 +18,7 @@ struct HikeDetailView: View {
     @State private var importMessage: String?
     @State private var workoutChoices: [HKWorkout] = []
     @State private var showingChoices = false
+    @State private var locations: [HikeLocation] = []
 
     var isEditable: Bool {
         hike.status == .inProgress || hike.status == .recap
@@ -29,6 +30,28 @@ struct HikeDetailView: View {
 
     var showDetails: Bool {
         hike.status != .planned
+    }
+
+    // MARK: Location picker
+    private var currentSlug: String? { HikeID.slug(from: hike.apiHikeID ?? "") }
+
+    // Cached locations (sorted), plus the current slug if it isn't cached — so an existing selection still shows.
+    private var locationOptions: [HikeLocation] {
+        var opts = locations.sorted { $0.fullName < $1.fullName }
+        if let slug = currentSlug, !opts.contains(where: { $0.shortName == slug }) {
+            opts.append(HikeLocation(shortName: slug, fullName: slug))
+        }
+        return opts
+    }
+
+    private var locationSelection: Binding<String?> {
+        Binding(get: { currentSlug },
+                set: { hike.apiHikeID = $0.map { HikeID.make(date: hike.date, slug: $0) } })
+    }
+
+    private func locationDisplayName(for id: String) -> String {
+        let slug = HikeID.slug(from: id) ?? id
+        return locations.first(where: { $0.shortName == slug })?.fullName ?? slug
     }
 
     var body: some View {
@@ -61,19 +84,16 @@ struct HikeDetailView: View {
                     }
                 }
 
-                // Hike API ID — editable while planned, read-only once set otherwise
+                // Location — drives the API id (yyyy-MM-dd-slug). Editable while planned.
                 if hike.status == .planned {
-                    TextField("Hike API ID (optional)", text: Binding(
-                        get: { hike.apiHikeID ?? "" },
-                        set: { newValue in
-                            let trimmed = newValue.trimmingCharacters(in: .whitespaces)
-                            hike.apiHikeID = trimmed.isEmpty ? nil : trimmed
+                    Picker("Location", selection: locationSelection) {
+                        Text("None").tag(String?.none)
+                        ForEach(locationOptions, id: \.shortName) { loc in
+                            Text(loc.fullName).tag(String?.some(loc.shortName))
                         }
-                    ))
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                    }
                 } else if let apiID = hike.apiHikeID {
-                    LabeledContent("Hike API ID", value: apiID)
+                    LabeledContent("Location", value: locationDisplayName(for: apiID))
                 }
             }
 
@@ -193,6 +213,16 @@ struct HikeDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             mileageText = hike.mileage == 0 ? "" : String(hike.mileage)
+        }
+        .task {
+            await HikeAPI.refreshLocationsIfStale()
+            locations = HikeAPI.cachedLocations()
+        }
+        .onChange(of: hike.date) {
+            // Keep the id's date prefix in sync when the date changes while planned.
+            if let slug = currentSlug {
+                hike.apiHikeID = HikeID.make(date: hike.date, slug: slug)
+            }
         }
         .confirmationDialog("Choose workout", isPresented: $showingChoices, titleVisibility: .visible) {
             ForEach(workoutChoices, id: \.uuid) { workout in

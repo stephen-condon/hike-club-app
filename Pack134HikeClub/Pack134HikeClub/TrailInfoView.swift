@@ -83,11 +83,16 @@ struct TrailInfoView: View {
     @ViewBuilder
     private func weatherRows(_ info: HikeResponse) -> some View {
         if info.weatherAvailable, let weather = info.weather {
-            let temp = weather.temperatureF.formatted(.number.precision(.fractionLength(0)))
-            let precip = "\(weather.precipitation.probabilityPct)% / \(weather.precipitation.amountIn.formatted())in"
-            LabeledContent("Weather", value: "\(temp)°F")
-            LabeledContent("Conditions", value: weather.conditions)
-            LabeledContent("Precipitation", value: precip)
+            Label(weather.conditions, systemImage: weatherSymbol(for: weather.conditions))
+            LabeledContent("Start temp", value: tempString(weather.startTempF))
+            LabeledContent("End temp", value: tempString(weather.endTempF))
+            if let heat = weather.heatIndexF {
+                LabeledContent("Heat index", value: tempString(heat))
+            }
+            if let chill = weather.windChillF {
+                LabeledContent("Wind chill", value: tempString(chill))
+            }
+            LabeledContent("Precipitation", value: precipString(weather.precipitation))
             ForEach(Array(weather.alerts.enumerated()), id: \.offset) { _, alert in
                 Label(alert.message, systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
@@ -95,6 +100,19 @@ struct TrailInfoView: View {
         } else {
             Text("Weather unavailable").foregroundStyle(.secondary)
         }
+    }
+
+    private func tempString(_ fahrenheit: Double) -> String {
+        "\(fahrenheit.formatted(.number.precision(.fractionLength(0))))°F"
+    }
+
+    private func precipString(_ p: Precipitation) -> String {
+        var s = "\(p.probabilityPct)% (\(p.expected ? "expected" : "not expected"))"
+        if let start = p.startsAt, let end = p.endsAt {
+            let f = Date.FormatStyle(date: .omitted, time: .shortened)
+            s += ", \(start.formatted(f))–\(end.formatted(f))"
+        }
+        return s
     }
 
     private func fetch() async {
