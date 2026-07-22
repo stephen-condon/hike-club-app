@@ -35,7 +35,8 @@ struct MapRef: Codable {
 }
 
 struct Weather: Codable {
-    let temperatureF: Double
+    let startTempF: Double
+    let endTempF: Double
     let conditions: String
     let precipitation: Precipitation
     let heatIndexF: Double?
@@ -45,12 +46,31 @@ struct Weather: Codable {
 
 struct Precipitation: Codable {
     let probabilityPct: Int
-    let amountIn: Double
+    let expected: Bool
+    let startsAt: Date?
+    let endsAt: Date?
 }
 
 struct Alert: Codable {
     let type: String
     let message: String
+}
+
+/// One short-name/full-name mapping from GET /hike-locations (snake_case, unlike the hike payload).
+struct HikeLocation: Codable {
+    let shortName: String
+    let fullName: String
+
+    enum CodingKeys: String, CodingKey {
+        case shortName = "short_name"
+        case fullName = "full_name"
+    }
+}
+
+extension HikeLocation {
+    static func decode(_ data: Data) throws -> [HikeLocation] {
+        try JSONDecoder().decode([HikeLocation].self, from: data)
+    }
 }
 
 // MARK: - Decoder
@@ -95,6 +115,12 @@ enum HikeAPIError: LocalizedError {
 enum HikeAPI {
     static let baseURLKey = "hikeAPIBaseURL"   // UserDefaults (not secret)
     static let apiKeyAccount = "hikeAPIKey"    // Keychain account (secret)
+    static let apiVersion = "2"                // x-api-version header → v2 responses
+
+    // Location-mapping cache (UserDefaults, not secret).
+    static let locationsCacheKey = "hikeLocationsCache"
+    static let locationsFetchedAtKey = "hikeLocationsFetchedAt"
+    static let locationsRefreshInterval: TimeInterval = 7 * 24 * 60 * 60  // refresh target; never a hard expiry
 
     private static let maxResponseBytes = 5 * 1024 * 1024  // 5 MB sanity cap on a display payload
 
@@ -116,9 +142,20 @@ enum HikeAPI {
               !trimmed.contains("#") else { throw HikeAPIError.badID }
         // appending(path:) percent-encodes the segment.
         let url = config.baseURL.appending(path: "hike").appending(path: trimmed)
+        return try await HikeResponse.decode(getData(from: url, apiKey: config.apiKey))
+    }
 
+    static func fetchLocations() async throws -> [HikeLocation] {
+        guard let config else { throw HikeAPIError.notConfigured }
+        let url = config.baseURL.appending(path: "hike-locations")
+        return try await HikeLocation.decode(getData(from: url, apiKey: config.apiKey))
+    }
+
+    /// Shared GET: x-api-key + x-api-version headers, status mapping, and size cap.
+    private static func getData(from url: URL, apiKey: String) async throws -> Data {
         var request = URLRequest(url: url, timeoutInterval: 20)
-        request.setValue(config.apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue(apiVersion, forHTTPHeaderField: "x-api-version")
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw HikeAPIError.server }
@@ -129,6 +166,43 @@ enum HikeAPI {
         default:                throw HikeAPIError.server
         }
         guard data.count <= maxResponseBytes else { throw HikeAPIError.tooLarge }
-        return try HikeResponse.decode(data)
+        return data
+    }
+
+    // MARK: - Location cache
+
+    static func cachedLocations() -> [HikeLocation] {
+        guard let data = UserDefaults.standard.data(forKey: locationsCacheKey),
+              let locations = try? JSONDecoder().decode([HikeLocation].self, from: data) else { return [] }
+        return locations
+    }
+
+    static var locationsFetchedAt: Date? {
+        UserDefaults.standard.object(forKey: locationsFetchedAtKey) as? Date
+    }
+
+    /// Pure staleness rule — testable without touching UserDefaults.
+    static func locationsAreStale(fetchedAt: Date?, now: Date) -> Bool {
+        guard let fetchedAt else { return true }
+        return now.timeIntervalSince(fetchedAt) > locationsRefreshInterval
+    }
+
+    static func storeLocations(_ locations: [HikeLocation]) {
+        guard let data = try? JSONEncoder().encode(locations) else { return }
+        UserDefaults.standard.set(data, forKey: locationsCacheKey)
+        UserDefaults.standard.set(Date(), forKey: locationsFetchedAtKey)
+    }
+
+    static func clearLocationsCache() {
+        UserDefaults.standard.removeObject(forKey: locationsCacheKey)
+        UserDefaults.standard.removeObject(forKey: locationsFetchedAtKey)
+    }
+
+    /// Refresh when stale; on failure keep the stale cache (only the Settings button clears it).
+    static func refreshLocationsIfStale() async {
+        guard config != nil, locationsAreStale(fetchedAt: locationsFetchedAt, now: Date()) else { return }
+        if let fresh = try? await fetchLocations() {
+            storeLocations(fresh)
+        }
     }
 }
