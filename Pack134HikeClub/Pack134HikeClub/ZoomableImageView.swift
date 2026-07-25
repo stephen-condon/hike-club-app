@@ -3,32 +3,25 @@
 //  Pack134HikeClub
 //
 //  Full-screen, pinch/pan/double-tap zoomable viewer for the trail map image.
-//  Native gestures come from UIScrollView (viewForZooming); the URL is https-gated
-//  before we fetch, mirroring TrailInfoView's untrusted-response handling.
+//  Native gestures come from UIScrollView (viewForZooming). Takes an already-loaded
+//  UIImage from TrailInfoView, so it never touches the network — zooming can't fail
+//  on an expired signed URL.
 //
 
 import SwiftUI
 import UIKit
 
 struct ZoomableImageView: View {
-    let url: URL
+    let image: UIImage
 
     @Environment(\.dismiss) private var dismiss
-    @State private var image: UIImage?
-    @State private var failed = false
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if let image {
-                ZoomableScrollView { UIImageView(image: image) }
-                    .ignoresSafeArea()
-            } else if failed {
-                Label("Map unavailable", systemImage: "map").foregroundStyle(.secondary)
-            } else {
-                ProgressView().tint(.white)
-            }
+            ZoomableScrollView { UIImageView(image: image) }
+                .ignoresSafeArea()
 
             VStack {
                 HStack {
@@ -39,18 +32,6 @@ struct ZoomableImageView: View {
                 }
                 Spacer()
             }
-        }
-        .task { await load() }
-    }
-
-    private func load() async {
-        // Only fetch an https URL (untrusted host from the API response).
-        guard url.scheme == "https" else { failed = true; return }
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let img = UIImage(data: data) { image = img } else { failed = true }
-        } catch {
-            failed = true
         }
     }
 }
