@@ -16,6 +16,7 @@ struct TrailInfoView: View {
     @State private var info: HikeResponse?
     @State private var isFetching = false
     @State private var message: String?
+    @State private var showMap = false
 
     var body: some View {
         Section("Trail Info") {
@@ -57,11 +58,21 @@ struct TrailInfoView: View {
                 switch phase {
                 case .success(let image):
                     image.resizable().scaledToFit()
+                        .overlay(alignment: .bottomTrailing) {
+                            Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                .padding(6)
+                                .background(.thinMaterial, in: Circle())
+                                .padding(6)
+                        }
+                        .onTapGesture { showMap = true }
                 case .failure:
                     Label("Map unavailable", systemImage: "map").foregroundStyle(.secondary)
                 default:
                     ProgressView()
                 }
+            }
+            .fullScreenCover(isPresented: $showMap) {
+                ZoomableImageView(url: info.map.url)
             }
         }
 
