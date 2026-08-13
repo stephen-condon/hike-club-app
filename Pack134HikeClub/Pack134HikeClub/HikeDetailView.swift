@@ -33,7 +33,7 @@ struct HikeDetailView: View {
     }
 
     // MARK: Location picker
-    private var currentSlug: String? { HikeID.slug(from: hike.apiHikeID ?? "") }
+    private var currentSlug: String? { hike.apiHikeID.map(HikeID.normalize) }
 
     // Cached locations (sorted), plus the current slug if it isn't cached — so an existing selection still shows.
     private var locationOptions: [HikeLocation] {
@@ -45,12 +45,11 @@ struct HikeDetailView: View {
     }
 
     private var locationSelection: Binding<String?> {
-        Binding(get: { currentSlug },
-                set: { hike.apiHikeID = $0.map { HikeID.make(date: hike.date, slug: $0) } })
+        Binding(get: { currentSlug }, set: { hike.apiHikeID = $0 })
     }
 
     private func locationDisplayName(for id: String) -> String {
-        let slug = HikeID.slug(from: id) ?? id
+        let slug = HikeID.normalize(id)
         return locations.first(where: { $0.shortName == slug })?.fullName ?? slug
     }
 
@@ -99,7 +98,8 @@ struct HikeDetailView: View {
 
             // MARK: Trail Info — fetched from the API when the hike is linked
             if let apiID = hike.apiHikeID {
-                TrailInfoView(apiHikeID: apiID)
+                // normalize so a hike saved with a legacy dated id still resolves
+                TrailInfoView(apiHikeID: HikeID.normalize(apiID))
             }
 
             // MARK: State machine transition
@@ -217,12 +217,6 @@ struct HikeDetailView: View {
         .task {
             await HikeAPI.refreshLocationsIfStale()
             locations = HikeAPI.cachedLocations()
-        }
-        .onChange(of: hike.date) {
-            // Keep the id's date prefix in sync when the date changes while planned.
-            if let slug = currentSlug {
-                hike.apiHikeID = HikeID.make(date: hike.date, slug: slug)
-            }
         }
         .confirmationDialog("Choose workout", isPresented: $showingChoices, titleVisibility: .visible) {
             ForEach(workoutChoices, id: \.uuid) { workout in
