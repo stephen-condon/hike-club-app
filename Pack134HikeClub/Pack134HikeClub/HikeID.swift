@@ -2,34 +2,27 @@
 //  HikeID.swift
 //  Pack134HikeClub
 //
-//  A hike's API id is derived from its date + the picked location's short_name slug:
-//  "yyyy-MM-dd-<slug>" (e.g. 2026-07-25-danada-equestrian-center). Pure + unit-tested.
+//  A hike's API id is the picked location's short_name slug, with no date
+//  (e.g. danada-equestrian-center) — the API keeps one record per location and
+//  updates it in place, so the id is stable across reschedules.
+//
+//  Ids used to be "yyyy-MM-dd-<slug>", and hikes saved before that change still
+//  hold the dated form in SwiftData. `normalize` strips the legacy prefix on read,
+//  so no store migration is needed. Pure + unit-tested.
 //
 
 import Foundation
 
 enum HikeID {
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = .current
-        f.dateFormat = "yyyy-MM-dd"
-        return f
-    }()
-
-    /// Build the API id for a hike on `date` at the location `slug`.
-    static func make(date: Date, slug: String) -> String {
-        "\(dateFormatter.string(from: date))-\(slug)"
-    }
-
-    /// The location slug embedded in an id, or nil if the id lacks a leading `yyyy-MM-dd-`.
-    static func slug(from id: String) -> String? {
-        guard id.count > 11 else { return nil }
+    /// The bare location slug for `id`: strips a legacy `yyyy-MM-dd-` prefix if one
+    /// is present, otherwise returns `id` unchanged.
+    static func normalize(_ id: String) -> String {
+        guard id.count > 11 else { return id }
         let p = Array(id.prefix(11))  // "yyyy-MM-dd-"
         let looksLikeDate = p[0...3].allSatisfy(\.isNumber) && p[4] == "-"
             && p[5...6].allSatisfy(\.isNumber) && p[7] == "-"
             && p[8...9].allSatisfy(\.isNumber) && p[10] == "-"
-        guard looksLikeDate else { return nil }
+        guard looksLikeDate else { return id }
         return String(id.dropFirst(11))
     }
 }

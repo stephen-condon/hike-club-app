@@ -145,28 +145,20 @@ struct HikeLocationDecodeTests {
 
 struct HikeIDTests {
 
-    private func date(_ y: Int, _ m: Int, _ d: Int) -> Date {
-        Calendar.current.date(from: DateComponents(year: y, month: m, day: d))!
+    @Test func stripsLegacyDatePrefix() {
+        #expect(HikeID.normalize("2026-07-25-danada-equestrian-center") == "danada-equestrian-center")
+        #expect(HikeID.normalize("2026-09-19-mallard-lake-forest-preserve") == "mallard-lake-forest-preserve")
     }
 
-    @Test func makesKnownIDs() {
-        #expect(HikeID.make(date: date(2026, 7, 25), slug: "danada-equestrian-center")
-                == "2026-07-25-danada-equestrian-center")
-        #expect(HikeID.make(date: date(2026, 8, 29), slug: "cantigny-park")
-                == "2026-08-29-cantigny-park")
-        #expect(HikeID.make(date: date(2026, 9, 19), slug: "mallard-lake-forest-preserve")
-                == "2026-09-19-mallard-lake-forest-preserve")
+    @Test func passesBareSlugThrough() {
+        #expect(HikeID.normalize("cantigny-park") == "cantigny-park")
+        #expect(HikeID.normalize("st-james-farm-forest-preserve") == "st-james-farm-forest-preserve")
     }
 
-    @Test func extractsSlugFromID() {
-        #expect(HikeID.slug(from: "2026-07-25-danada-equestrian-center") == "danada-equestrian-center")
-        #expect(HikeID.slug(from: "2026-09-19-mallard-lake-forest-preserve") == "mallard-lake-forest-preserve")
-    }
-
-    @Test func rejectsNonConformingID() {
-        #expect(HikeID.slug(from: "cantigny-park") == nil)   // no date prefix
-        #expect(HikeID.slug(from: "") == nil)
-        #expect(HikeID.slug(from: "2026-07-25-") == nil)     // empty slug
+    @Test func leavesNonConformingIDAlone() {
+        #expect(HikeID.normalize("") == "")
+        #expect(HikeID.normalize("2026-07-25-") == "2026-07-25-")  // prefix only, no slug to strip to
+        #expect(HikeID.normalize("not-a-date-cantigny") == "not-a-date-cantigny")
     }
 }
 
