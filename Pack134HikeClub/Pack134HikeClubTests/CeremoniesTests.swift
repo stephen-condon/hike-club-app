@@ -330,3 +330,35 @@ struct CompleteCeremonyTests {
         #expect(ceremony.awards.isEmpty)
     }
 }
+
+// MARK: - stickBuyCount
+
+@MainActor
+struct StickBuyCountTests {
+
+    @Test func countsPendingSticksAboveStock() {
+        let scoutA = Scout(name: "Uma", stickEarned: true)
+        let scoutB = Scout(name: "Vic", stickEarned: true)
+        let item = InventoryItem(kind: .hikingStick, count: 1, minReserve: 1)
+
+        // need 2, on hand 1, reserve 1 -> 2 + 1 - 1
+        #expect(stickBuyCount(scouts: [scoutA, scoutB], hikes: [], inventory: [item]) == 2)
+    }
+
+    @Test func zeroWhenStockCoversNeedAndReserve() {
+        let scout = Scout(name: "Wes", stickEarned: true)
+        let item = InventoryItem(kind: .hikingStick, count: 5, minReserve: 1)
+        #expect(stickBuyCount(scouts: [scout], hikes: [], inventory: [item]) == 0)
+    }
+
+    @Test func zeroWhenNoScoutHasAPendingStick() {
+        let scout = Scout(name: "Xena")
+        let item = InventoryItem(kind: .hikingStick, count: 2, minReserve: 1)
+        #expect(stickBuyCount(scouts: [scout], hikes: [], inventory: [item]) == 0)
+    }
+
+    @Test func zeroWhenHikingStickInventoryRowIsMissing() {
+        let scout = Scout(name: "Yuri", stickEarned: true)
+        #expect(stickBuyCount(scouts: [scout], hikes: [], inventory: []) == 0)
+    }
+}

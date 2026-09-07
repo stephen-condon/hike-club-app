@@ -81,6 +81,13 @@ func ceremonyShortfalls(needs: [InventoryKind: Int], inventory: [InventoryItem])
     .sorted { $0.kind.rawValue < $1.kind.rawValue }
 }
 
+/// Hiking sticks to buy to cover every pending stick plus the item's reserve. 0 if stocked.
+func stickBuyCount(scouts: [Scout], hikes: [Hike], inventory: [InventoryItem]) -> Int {
+    let needs = ceremonyInventoryNeeds(scouts: scouts, hikes: hikes)
+    return ceremonyShortfalls(needs: needs, inventory: inventory)
+        .first { $0.kind == .hikingStick }?.buy ?? 0
+}
+
 // MARK: - Ceremony completion
 
 /// Awards every pending item to each scout in `scouts` (reusing ScoutActions), snapshots a
