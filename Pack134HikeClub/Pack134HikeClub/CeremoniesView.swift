@@ -11,6 +11,9 @@ import SwiftData
 struct CeremoniesView: View {
     @Environment(\.modelContext) private var context
     @Query var ceremonies: [Ceremony]
+    @Query(filter: #Predicate<Scout> { $0.isActive }) var scouts: [Scout]
+    @Query var allHikes: [Hike]
+    @Query var inventoryItems: [InventoryItem]
     @State private var showingNewCeremony = false
 
     var upcoming: [Ceremony] {
@@ -65,7 +68,9 @@ struct CeremoniesView: View {
             // ponytail: reschedule on tab appear covers create/edit/delete/complete when the user
             // returns here; add per-mutation calls only if instant cross-tab accuracy is ever needed.
             .onAppear {
-                CeremonyReminders.reschedule(ceremonies)
+                CeremonyReminders.reschedule(
+                    ceremonies,
+                    sticksToBuy: stickBuyCount(scouts: scouts, hikes: allHikes, inventory: inventoryItems))
             }
         }
     }
@@ -146,7 +151,12 @@ struct NewCeremonySheet: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Ceremony.self, CeremonyAward.self, configurations: config)
+    let container = try! ModelContainer(
+        for: Scout.self, Hike.self, Attendance.self,
+            InventoryItem.self, StickAssignment.self,
+            Ceremony.self, CeremonyAward.self,
+        configurations: config
+    )
     return CeremoniesView()
         .modelContainer(container)
 }

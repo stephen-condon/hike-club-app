@@ -31,8 +31,15 @@ struct Pack134HikeClubApp: App {
                     Seed.seedIfNeeded(context: container.mainContext)
                     Task {
                         await CeremonyReminders.requestAuthorization()
-                        let ceremonies = (try? container.mainContext.fetch(FetchDescriptor<Ceremony>())) ?? []
-                        CeremonyReminders.reschedule(ceremonies)
+                        let context = container.mainContext
+                        let ceremonies = (try? context.fetch(FetchDescriptor<Ceremony>())) ?? []
+                        let scouts = (try? context.fetch(
+                            FetchDescriptor<Scout>(predicate: #Predicate { $0.isActive }))) ?? []
+                        let hikes = (try? context.fetch(FetchDescriptor<Hike>())) ?? []
+                        let inventory = (try? context.fetch(FetchDescriptor<InventoryItem>())) ?? []
+                        CeremonyReminders.reschedule(
+                            ceremonies,
+                            sticksToBuy: stickBuyCount(scouts: scouts, hikes: hikes, inventory: inventory))
                     }
                 }
         }

@@ -21,7 +21,9 @@ enum CeremonyReminders {
     private static let fireHour = 9   // 9 AM local on the target day
 
     /// Reminders for all planned (incomplete) ceremonies whose fire date is still in the future.
-    static func upcoming(for ceremonies: [Ceremony], now: Date = .now) -> [CeremonyReminder] {
+    /// `sticksToBuy` is pack-wide (pending awards are derived across the whole roster, not per
+    /// ceremony), so the same count goes into every stick reminder in the batch.
+    static func upcoming(for ceremonies: [Ceremony], sticksToBuy: Int, now: Date = .now) -> [CeremonyReminder] {
         let calendar = Calendar.current
         var reminders: [CeremonyReminder] = []
 
@@ -37,11 +39,16 @@ enum CeremonyReminders {
             if let fire = fireDate(weeksBefore: stickLeadWeeks, ceremony: ceremony, calendar: calendar), fire > now {
                 reminders.append(CeremonyReminder(
                     title: "Buy hiking sticks",
-                    body: "\(ceremony.title) is on \(when). Pick up hiking sticks for anyone earning one.",
+                    body: "\(ceremony.title) is on \(when). \(stickBody(sticksToBuy))",
                     fireDate: fire))
             }
         }
         return reminders
+    }
+
+    private static func stickBody(_ sticksToBuy: Int) -> String {
+        guard sticksToBuy > 0 else { return "You have enough hiking sticks on hand." }
+        return "Buy \(sticksToBuy) hiking stick\(sticksToBuy == 1 ? "" : "s")."
     }
 
     private static func fireDate(weeksBefore weeks: Int, ceremony: Ceremony, calendar: Calendar) -> Date? {
@@ -58,12 +65,12 @@ enum CeremonyReminders {
 
     /// Cancels all pending reminders and re-adds one per upcoming reminder.
     /// ponytail: removeAllPending is fine — this app schedules no other notifications.
-    static func reschedule(_ ceremonies: [Ceremony], now: Date = .now) {
+    static func reschedule(_ ceremonies: [Ceremony], sticksToBuy: Int, now: Date = .now) {
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
 
         let calendar = Calendar.current
-        for (index, reminder) in upcoming(for: ceremonies, now: now).enumerated() {
+        for (index, reminder) in upcoming(for: ceremonies, sticksToBuy: sticksToBuy, now: now).enumerated() {
             let content = UNMutableNotificationContent()
             content.title = reminder.title
             content.body = reminder.body
