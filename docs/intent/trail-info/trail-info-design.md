@@ -64,7 +64,17 @@ Status mapping: 200 proceeds; 401, 404, and anything else map to distinct `HikeA
 
 Locations are cached in `UserDefaults` and refreshed when older than 7 days. `refreshLocationsIfStale` (`:202-207`) is deliberately sticky: on any failure it keeps what it has, because a stale location list is far more useful than an empty picker on a trailhead with no signal. The cache is cleared only by the explicit Settings button.
 
-`locationsAreStale(fetchedAt:now:)` is pure and unit-tested; the `UserDefaults` access is not.
+A successful fetch can return an empty list: the API serves whatever list the admin holds, and the admin allows an empty one to mean no location is set up yet. The cache therefore has three states, told apart by the fetch date rather than the count:
+
+| State | Signal | Hike detail (planned) | Settings → Cached |
+|---|---|---|---|
+| Never fetched | no fetch date | picker only | `none` |
+| Fetched, empty | fetch date, zero locations | picker plus the footnote "Locations loaded — none are set up yet." | `0 · {date}` |
+| Fetched | fetch date, one or more locations | picker only | `{count} · {date}` |
+
+An empty result replaces the cache like any other successful fetch — the server's list is the organizer's current statement, and keeping an older list would offer locations the admin has removed. The note exists so that an empty picker after a successful load does not read as a failed one. An empty cache follows the same seven-day refresh as any other; the Settings clear button, enabled whenever a fetch date exists, is how the owner forces an earlier refetch.
+
+`locationsAreStale(fetchedAt:now:)` and `LocationListState(count:fetchedAt:)`, which classifies the three states, are pure and unit-tested; the `UserDefaults` access is not.
 
 **Current-state divergence:** the refresh swallows its error with `try?` (`:204`), so a permanently failing refresh is indistinguishable from a fresh cache. `SettingsView` shows a fetch date but no failure state.
 
@@ -87,6 +97,7 @@ The map image is fetched exactly once per fetch and held as a `UIImage`, then ha
 | Id entry | Location picker only | Free-text field | Eliminates typos and the path-escape class outright |
 | Linking window | `planned` only | Any status; until `complete` | `[inferred]` — matches date editability, but no rationale is recorded |
 | Location cache on failure | Keep stale data | Clear; show an error | An offline trailhead is exactly when the picker is needed |
+| Empty location list from the server | Cache it and say it loaded with none | Keep the previous cache; show only an empty picker | An empty list is the organizer's current answer, so keeping an older list contradicts it; an unexplained empty picker looks like a failed fetch. |
 | Cache clearing | Explicit Settings button only | TTL expiry; clear on error | Makes cache state something the owner controls deliberately |
 | Weather symbol | Keyword heuristic | Exhaustive `switch`; server-supplied icon | The field is free-form; `ponytail:` names the upgrade |
 | Map zoom | Pass the loaded `UIImage` | Re-fetch the URL in the zoom view | The URL is signed and expiring; re-fetching could fail after the image was already on screen |
