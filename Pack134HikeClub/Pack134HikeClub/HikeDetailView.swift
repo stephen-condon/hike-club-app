@@ -19,6 +19,7 @@ struct HikeDetailView: View {
     @State private var workoutChoices: [HKWorkout] = []
     @State private var showingChoices = false
     @State private var locations: [HikeLocation] = []
+    @State private var locationsFetchedAt: Date?
 
     var isEditable: Bool {
         hike.status == .inProgress || hike.status == .recap
@@ -83,13 +84,18 @@ struct HikeDetailView: View {
                     }
                 }
 
-                // Location — drives the API id (yyyy-MM-dd-slug). Editable while planned.
+                // Location — its slug is the API id. Editable while planned.
                 if hike.status == .planned {
                     Picker("Location", selection: locationSelection) {
                         Text("None").tag(String?.none)
                         ForEach(locationOptions, id: \.shortName) { loc in
                             Text(loc.fullName).tag(String?.some(loc.shortName))
                         }
+                    }
+                    if LocationListState(count: locations.count, fetchedAt: locationsFetchedAt).showsEmptyNote {
+                        Text(LocationListState.emptyNote)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 } else if let apiID = hike.apiHikeID {
                     LabeledContent("Location", value: locationDisplayName(for: apiID))
@@ -217,6 +223,7 @@ struct HikeDetailView: View {
         .task {
             await HikeAPI.refreshLocationsIfStale()
             locations = HikeAPI.cachedLocations()
+            locationsFetchedAt = HikeAPI.locationsFetchedAt()
         }
         .confirmationDialog("Choose workout", isPresented: $showingChoices, titleVisibility: .visible) {
             ForEach(workoutChoices, id: \.uuid) { workout in

@@ -20,10 +20,8 @@ struct SettingsView: View {
         baseURL.isEmpty || URL(string: baseURL)?.scheme == "https"
     }
 
-    private var locationCacheStatus: String {
-        let count = HikeAPI.cachedLocations().count
-        guard count > 0, let at = HikeAPI.locationsFetchedAt else { return "none" }
-        return "\(count) · \(at.formatted(date: .abbreviated, time: .omitted))"
+    private var locationListState: LocationListState {
+        LocationListState(count: HikeAPI.cachedLocations().count, fetchedAt: HikeAPI.locationsFetchedAt())
     }
 
     var body: some View {
@@ -68,12 +66,12 @@ struct SettingsView: View {
                 }
 
                 Section("Trail Locations") {
-                    LabeledContent("Cached", value: locationCacheStatus)
+                    LabeledContent("Cached", value: locationListState.cacheStatus)
                     Button("Clear cached locations", role: .destructive) {
                         HikeAPI.clearLocationsCache()
                         message = "Cached locations cleared."
                     }
-                    .disabled(HikeAPI.cachedLocations().isEmpty)
+                    .disabled(!locationListState.canClear)
                 }
             }
             .navigationTitle("Settings")

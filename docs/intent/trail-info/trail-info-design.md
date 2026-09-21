@@ -45,7 +45,7 @@ The id is never typed by hand. `HikeDetailView`'s location picker (`:87-93`) set
 
 `HikeID.normalize` (`HikeID.swift:19-27`) strips a legacy `yyyy-MM-dd-` prefix when it finds one, so hikes saved under the previous dated scheme still resolve without a store migration. It is pure and unit-tested.
 
-**Current-state divergence:** the project's `CLAUDE.md` still documents the superseded scheme — `HikeID.make(date:slug:)`, `HikeID.slug(from:)`, `"yyyy-MM-dd-<slug>"` ids, and an `.onChange(of: hike.date)` re-sync. None of those exist. The comment at `HikeDetailView.swift:86` repeats the old scheme too.
+**Current-state divergence:** the project's `CLAUDE.md` still documents the superseded scheme — `HikeID.make(date:slug:)`, `HikeID.slug(from:)`, `"yyyy-MM-dd-<slug>"` ids, and an `.onChange(of: hike.date)` re-sync. None of those exist.
 
 ## API Surface
 
@@ -106,7 +106,7 @@ The map image is fetched exactly once per fetch and held as a `UIImage`, then ha
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. **CLAUDE.md and `HikeDetailView.swift:86` describe the superseded dated-id scheme.** Documentation fix, no code change.
+1. **CLAUDE.md describes the superseded dated-id scheme.** Documentation fix, no code change.
 2. **Silent location-refresh failure.** The owner cannot tell a stale cache from a current one. Surfacing a last-attempt or last-failure state in Settings would close it.
 3. **A hike can only be linked while `planned`.** A hike started without a location can never get trail info. No rationale recorded.
 4. **The Settings https warning does not block saving.** Harmless because `config` refuses, but the UI implies a validation it does not perform.

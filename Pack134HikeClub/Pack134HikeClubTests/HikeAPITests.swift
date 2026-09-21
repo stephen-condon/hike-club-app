@@ -180,6 +180,71 @@ struct LocationCacheStalenessTests {
     }
 }
 
+// Staleness takes only the fetch date, so an empty list refreshes on the same schedule as any other.
+// @spec TRAIL-050
+struct EmptyLocationCacheStalenessTests {
+    @Test func emptyListFetchedRecentlyIsFresh() {
+        let now = Date()
+        #expect(HikeAPI.locationsAreStale(fetchedAt: now.addingTimeInterval(-60), now: now) == false)
+    }
+}
+
+struct LocationListStateTests {
+    private let fetched = Date(timeIntervalSince1970: 1_790_000_000)
+
+    @Test func classifiesTheThreeStates() {
+        #expect(LocationListState(count: 0, fetchedAt: nil) == .notFetched)
+        #expect(LocationListState(count: 3, fetchedAt: nil) == .notFetched)
+        #expect(LocationListState(count: 0, fetchedAt: fetched) == .empty(fetchedAt: fetched))
+        #expect(LocationListState(count: 3, fetchedAt: fetched) == .loaded(count: 3, fetchedAt: fetched))
+    }
+
+    // @spec TRAIL-047, TRAIL-048
+    @Test func emptyNoteShowsOnlyForAFetchedEmptyList() {
+        #expect(LocationListState(count: 0, fetchedAt: fetched).showsEmptyNote)
+        #expect(!LocationListState(count: 0, fetchedAt: nil).showsEmptyNote)
+        #expect(!LocationListState(count: 2, fetchedAt: fetched).showsEmptyNote)
+        #expect(LocationListState.emptyNote == "Locations loaded — none are set up yet.")
+    }
+
+    // @spec TRAIL-049
+    @Test func clearingIsOfferedWheneverAFetchTimeIsRecorded() {
+        #expect(LocationListState(count: 0, fetchedAt: fetched).canClear)
+        #expect(LocationListState(count: 2, fetchedAt: fetched).canClear)
+        #expect(!LocationListState(count: 0, fetchedAt: nil).canClear)
+    }
+
+    // @spec TRAIL-034
+    @Test func settingsStatusShowsZeroOnceFetched() {
+        let date = fetched.formatted(date: .abbreviated, time: .omitted)
+        #expect(LocationListState(count: 0, fetchedAt: nil).cacheStatus == "none")
+        #expect(LocationListState(count: 0, fetchedAt: fetched).cacheStatus == "0 · \(date)")
+        #expect(LocationListState(count: 15, fetchedAt: fetched).cacheStatus == "15 · \(date)")
+    }
+}
+
+// Isolated defaults suite per test, so the real cache is never touched.
+struct LocationCacheStorageTests {
+    private func isolatedDefaults() -> UserDefaults {
+        UserDefaults(suiteName: "LocationCacheStorageTests-\(UUID().uuidString)")!
+    }
+
+    // @spec TRAIL-046
+    @Test func storingAnEmptyListReplacesTheCacheAndRecordsTheFetch() {
+        let defaults = isolatedDefaults()
+        HikeAPI.storeLocations([HikeLocation(shortName: "cantigny-park", fullName: "Cantigny")], in: defaults)
+        HikeAPI.storeLocations([], in: defaults)
+        #expect(HikeAPI.cachedLocations(in: defaults).isEmpty)
+        #expect(HikeAPI.locationsFetchedAt(in: defaults) != nil)
+    }
+
+    @Test func neverStoredHasNoFetchTime() {
+        let defaults = isolatedDefaults()
+        #expect(HikeAPI.cachedLocations(in: defaults).isEmpty)
+        #expect(HikeAPI.locationsFetchedAt(in: defaults) == nil)
+    }
+}
+
 struct WeatherSymbolTests {
     @Test func mapsConditionsToSymbols() {
         #expect(weatherSymbol(for: "Sunny") == "sun.max")
