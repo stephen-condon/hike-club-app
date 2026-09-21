@@ -43,8 +43,13 @@
 - [x] **TRAIL-030**: The system shall treat the cached location list as stale where it has never been fetched or was fetched more than seven days ago.
 - [x] **TRAIL-031**: When a hike detail view appears and the cached location list is stale, the system shall attempt to refresh that list.
 - [x] **TRAIL-032**: If refreshing the location list fails, then the system shall keep the existing cached list.
+- [x] **TRAIL-046**: When refreshing the location list succeeds with an empty list, the system shall replace the cached list with the empty list and record the fetch time.
+- [x] **TRAIL-050**: The system shall apply the seven-day staleness rule to an empty cached location list exactly as it does to a non-empty one.
 - [x] **TRAIL-033**: The system shall clear the cached location list only when the owner chooses to clear it in Settings.
-- [x] **TRAIL-034**: The Settings view shall show how many locations are cached and when they were fetched.
+- [x] **TRAIL-049**: While a location-list fetch time is recorded, the Settings view shall enable clearing the cached location list, including when the cached list is empty.
+- [x] **TRAIL-034**: Where a location-list fetch time is recorded, the Settings view shall show how many locations are cached, including zero, and when they were fetched; where none is recorded, it shall show `none`.
+- [x] **TRAIL-047**: While a hike is planned and the cached location list has a recorded fetch time and holds no locations, the hike detail view shall show "Locations loaded — none are set up yet." beneath the location picker.
+- [x] **TRAIL-048**: While the cached location list has no recorded fetch time, or holds at least one location, the hike detail view shall not show the empty-list note.
 
 ## Display
 

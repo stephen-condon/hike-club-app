@@ -110,6 +110,41 @@ enum HikeAPIError: LocalizedError {
     }
 }
 
+// MARK: - Location list state
+
+// @spec TRAIL-034, TRAIL-047, TRAIL-048, TRAIL-049
+/// The cached location list as the owner sees it. The fetch date, not the count,
+/// separates "never loaded" from "loaded, and the server has none".
+enum LocationListState: Equatable {
+    case notFetched
+    case empty(fetchedAt: Date)
+    case loaded(count: Int, fetchedAt: Date)
+
+    static let emptyNote = "Locations loaded — none are set up yet."
+
+    init(count: Int, fetchedAt: Date?) {
+        guard let fetchedAt else { self = .notFetched; return }
+        self = count == 0 ? .empty(fetchedAt: fetchedAt) : .loaded(count: count, fetchedAt: fetchedAt)
+    }
+
+    var showsEmptyNote: Bool {
+        if case .empty = self { return true }
+        return false
+    }
+
+    /// Clearing forces a refetch, so it is useful whenever anything was fetched.
+    var canClear: Bool { self != .notFetched }
+
+    /// Settings → Cached: `none`, or `{count} · {date}` including a count of zero.
+    var cacheStatus: String {
+        switch self {
+        case .notFetched: return "none"
+        case .empty(let at): return "0 · \(at.formatted(date: .abbreviated, time: .omitted))"
+        case .loaded(let count, let at): return "\(count) · \(at.formatted(date: .abbreviated, time: .omitted))"
+        }
+    }
+}
+
 // MARK: - Client
 
 enum HikeAPI {
@@ -171,14 +206,16 @@ enum HikeAPI {
 
     // MARK: - Location cache
 
-    static func cachedLocations() -> [HikeLocation] {
-        guard let data = UserDefaults.standard.data(forKey: locationsCacheKey),
+    static func cachedLocations(in defaults: UserDefaults = .standard) -> [HikeLocation] {
+        guard let data = defaults.data(forKey: locationsCacheKey),
               let locations = try? JSONDecoder().decode([HikeLocation].self, from: data) else { return [] }
         return locations
     }
 
-    static var locationsFetchedAt: Date? {
-        UserDefaults.standard.object(forKey: locationsFetchedAtKey) as? Date
+    /// When the list was last fetched successfully — `nil` means never, which is
+    /// how an empty cache is told apart from an empty list the server returned.
+    static func locationsFetchedAt(in defaults: UserDefaults = .standard) -> Date? {
+        defaults.object(forKey: locationsFetchedAtKey) as? Date
     }
 
     /// Pure staleness rule — testable without touching UserDefaults.
@@ -187,10 +224,11 @@ enum HikeAPI {
         return now.timeIntervalSince(fetchedAt) > locationsRefreshInterval
     }
 
-    static func storeLocations(_ locations: [HikeLocation]) {
+    // @spec TRAIL-046
+    static func storeLocations(_ locations: [HikeLocation], in defaults: UserDefaults = .standard) {
         guard let data = try? JSONEncoder().encode(locations) else { return }
-        UserDefaults.standard.set(data, forKey: locationsCacheKey)
-        UserDefaults.standard.set(Date(), forKey: locationsFetchedAtKey)
+        defaults.set(data, forKey: locationsCacheKey)
+        defaults.set(Date(), forKey: locationsFetchedAtKey)
     }
 
     static func clearLocationsCache() {
@@ -200,7 +238,7 @@ enum HikeAPI {
 
     /// Refresh when stale; on failure keep the stale cache (only the Settings button clears it).
     static func refreshLocationsIfStale() async {
-        guard config != nil, locationsAreStale(fetchedAt: locationsFetchedAt, now: Date()) else { return }
+        guard config != nil, locationsAreStale(fetchedAt: locationsFetchedAt(), now: Date()) else { return }
         if let fresh = try? await fetchLocations() {
             storeLocations(fresh)
         }
