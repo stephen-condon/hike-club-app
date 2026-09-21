@@ -14,8 +14,10 @@
 
 ## Requests
 
-- [x] **TRAIL-010**: The system shall send the stored API key as an x-api-key header and the value 2 as an x-api-version header on every Hike Club API request.
+- [x] **TRAIL-010**: The system shall send the stored API key as an x-api-key header and the value 3 as an x-api-version header on every Hike Club API request.
 - [x] **TRAIL-011**: When the owner fetches trail info for a hike, the system shall issue a GET request to /hike/{id} using that hike's API id.
+- [x] **TRAIL-052**: When fetching trail info for a hike, the system shall send that hike's date and effective end time as RFC 3339 start and end query parameters, formatted in the device's own time zone offset, since the API stores no date of its own under version 3.
+- [x] **TRAIL-053**: If a Hike Club API request returns status 400, then the system shall report that the hike's start and end times should be checked.
 - [x] **TRAIL-012**: If a hike's API id is empty, or contains a slash, question mark, or hash character, then the system shall reject the trail info request without issuing it.
 - [x] **TRAIL-013**: When building a Hike Club API request URL, the system shall append the hike id as a percent-encoded path segment rather than concatenating it into the URL string.
 - [x] **TRAIL-014**: If a Hike Club API response body exceeds 5 MB, then the system shall reject that response.
@@ -64,3 +66,5 @@
 - [x] **TRAIL-043**: If a trail info response reports weather as unavailable, then the system shall state that weather is unavailable.
 - [x] **TRAIL-044**: The trail info section shall show the meeting point's coordinates, and shall offer a maps link where the response's maps URL uses the https scheme.
 - [x] **TRAIL-045**: The full-screen trail map viewer shall support pinch, pan, and double-tap zoom up to four times actual size.
+- [x] **TRAIL-051**: If a trail info response carries no map, then the system shall show that no map exists for that trail, distinct from the message shown when a present map fails to load.
+- [x] **TRAIL-054**: Where a trail info response reports weather as available, the system shall show conditions at both the start and the end of the hike window.

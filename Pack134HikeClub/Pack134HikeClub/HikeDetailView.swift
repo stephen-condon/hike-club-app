@@ -49,6 +49,15 @@ struct HikeDetailView: View {
         Binding(get: { currentSlug }, set: { hike.apiHikeID = $0 })
     }
 
+    // Edits `endTime` directly (skipping the `date`-derived default) once the
+    // owner touches the picker, same pattern as `locationSelection`.
+    // ponytail: the "Ends" picker only asks for a time, so if the owner sets an
+    // explicit end and then moves "Starts" to a different day, the end keeps its
+    // old day. Add a full end-date picker if a hike ever needs to cross midnight.
+    private var endTimeBinding: Binding<Date> {
+        Binding(get: { hike.effectiveEndTime }, set: { hike.endTime = $0 })
+    }
+
     private func locationDisplayName(for id: String) -> String {
         let slug = HikeID.normalize(id)
         return locations.first(where: { $0.shortName == slug })?.fullName ?? slug
@@ -65,11 +74,16 @@ struct HikeDetailView: View {
                     TextField("Title", text: $hike.title)
                 }
 
-                // Date — editable only in planned
+                // Start/end — editable only in planned. These are the hike's only
+                // date/time now: the API record carries none, and the window sent
+                // to Trail Info comes straight from here.
+                // @spec HIKE-006
                 if hike.status == .planned {
-                    DatePicker("Date", selection: $hike.date, displayedComponents: .date)
+                    DatePicker("Starts", selection: $hike.date, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("Ends", selection: endTimeBinding, displayedComponents: .hourAndMinute)
                 } else {
-                    LabeledContent("Date", value: hike.date.formatted(date: .abbreviated, time: .omitted))
+                    LabeledContent("Starts", value: hike.date.formatted(date: .abbreviated, time: .shortened))
+                    LabeledContent("Ends", value: hike.effectiveEndTime.formatted(date: .omitted, time: .shortened))
                 }
 
                 // Status row
@@ -105,7 +119,7 @@ struct HikeDetailView: View {
             // MARK: Trail Info — fetched from the API when the hike is linked
             if let apiID = hike.apiHikeID {
                 // normalize so a hike saved with a legacy dated id still resolves
-                TrailInfoView(apiHikeID: HikeID.normalize(apiID))
+                TrailInfoView(apiHikeID: HikeID.normalize(apiID), start: hike.date, end: hike.effectiveEndTime)
             }
 
             // MARK: State machine transition
@@ -297,100 +311,6 @@ struct HikeDetailView: View {
                 hike.status = .recap
             }
             .foregroundStyle(.orange)
-        }
-    }
-}
-
-// MARK: - AttendanceRow
-
-struct AttendanceRow: View {
-    @Environment(\.modelContext) private var context
-    @Bindable var hike: Hike
-    let scout: Scout
-
-    var attendance: Attendance? {
-        hike.attendances.first(where: { $0.scout?.persistentModelID == scout.persistentModelID })
-    }
-
-    var isAttending: Bool { attendance != nil }
-
-    var isCarryingBackpack: Bool {
-        attendance?.scoutQualitiesRaw.contains(.backpack) ?? false
-    }
-
-    var body: some View {
-        HStack {
-            Text(scout.name)
-            Spacer()
-            Button {
-                    guard let a = attendance else { return }
-                    if isCarryingBackpack {
-                        a.scoutQualitiesRaw.removeAll { $0 == .backpack }
-                    } else {
-                        a.scoutQualitiesRaw.append(.backpack)
-                    }
-                } label: {
-                    Text("🎒")
-                        .opacity(isAttending ? (isCarryingBackpack ? 1.0 : 0.25) : 0)
-                }
-                .buttonStyle(.plain)
-                .disabled(!isAttending)
-            Toggle("", isOn: Binding(
-                get: { isAttending },
-                set: { newValue in
-                    if newValue {
-                        let a = Attendance(hike: hike, scout: scout)
-                        context.insert(a)
-                        hike.attendances.append(a)
-                    } else {
-                        if let a = attendance {
-                            context.delete(a)
-                        }
-                    }
-                }
-            ))
-            .labelsHidden()
-            .fixedSize()
-        }
-    }
-}
-
-// MARK: - QualityRow
-
-struct QualityRow: View {
-    @Bindable var hike: Hike
-    let quality: HikeQuality
-    let isEditable: Bool
-
-    var isOn: Bool { hike.qualitiesRaw.contains(quality) }
-
-    var body: some View {
-        HStack {
-            Text(quality.badgeType.displayName)
-            Spacer()
-            if isEditable {
-                Toggle("", isOn: Binding(
-                    get: { isOn },
-                    set: { newValue in
-                        if newValue {
-                            if !hike.qualitiesRaw.contains(quality) {
-                                hike.qualitiesRaw.append(quality)
-                            }
-                        } else {
-                            hike.qualitiesRaw.removeAll { $0 == quality }
-                        }
-                    }
-                ))
-                .labelsHidden()
-            } else {
-                if isOn {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.green)
-                } else {
-                    Image(systemName: "minus")
-                        .foregroundStyle(.quaternary)
-                }
-            }
         }
     }
 }

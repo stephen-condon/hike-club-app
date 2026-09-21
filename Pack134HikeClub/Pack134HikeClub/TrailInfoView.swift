@@ -13,6 +13,10 @@ import UIKit
 
 struct TrailInfoView: View {
     let apiHikeID: String
+    // The hike's window — the only source of its date under API v3; the
+    // server's record carries none.
+    let start: Date
+    let end: Date
 
     @State private var info: HikeResponse?
     @State private var isFetching = false
@@ -55,11 +59,14 @@ struct TrailInfoView: View {
         .disabled(isFetching)
     }
 
+    // @spec TRAIL-051
     @ViewBuilder
     private func details(_ info: HikeResponse) -> some View {
         // Map image — only rendered for an https URL (untrusted host from the response);
-        // loaded once in loadMap() and shared with the zoom view.
-        if info.map.url.scheme == "https" {
+        // loaded once in loadMap() and shared with the zoom view. A hike whose map
+        // image never uploaded serves with no map at all under v3, distinct from a
+        // present-but-unloadable one.
+        if let map = info.map, map.url.scheme == "https" {
             if let mapImage {
                 Image(uiImage: mapImage).resizable().scaledToFit()
                     .overlay(alignment: .bottomTrailing) {
@@ -77,6 +84,12 @@ struct TrailInfoView: View {
             } else {
                 ProgressView()
             }
+        } else if info.map != nil {
+            // Present but not https — same "unavailable" the app already used to
+            // refuse an untrusted-scheme URL.
+            Label("Map unavailable", systemImage: "map").foregroundStyle(.secondary)
+        } else {
+            Label("No map for this trail", systemImage: "map").foregroundStyle(.secondary)
         }
 
         // Meeting point — coords + Google Maps link (https only)
@@ -94,12 +107,14 @@ struct TrailInfoView: View {
         weatherRows(info)
     }
 
+    // @spec TRAIL-054
     @ViewBuilder
     private func weatherRows(_ info: HikeResponse) -> some View {
         if info.weatherAvailable, let weather = info.weather {
-            Label(weather.conditions, systemImage: weatherSymbol(for: weather.conditions))
+            Label(weather.startConditions, systemImage: weatherSymbol(for: weather.startConditions))
             LabeledContent("Start temp", value: tempString(weather.startTempF))
             LabeledContent("End temp", value: tempString(weather.endTempF))
+            LabeledContent("End conditions", value: weather.endConditions)
             if let heat = weather.heatIndexF {
                 LabeledContent("Heat index", value: tempString(heat))
             }
@@ -133,9 +148,14 @@ struct TrailInfoView: View {
         isFetching = true
         defer { isFetching = false }
         do {
-            let response = try await HikeAPI.fetch(id: apiHikeID)
+            let response = try await HikeAPI.fetch(id: apiHikeID, start: start, end: end)
             info = response
-            await loadMap(response.map.url)
+            if let map = response.map {
+                await loadMap(map.url)
+            } else {
+                mapImage = nil
+                mapFailed = false
+            }
         } catch {
             message = error.localizedDescription
         }

@@ -10,15 +10,16 @@
 
 import Foundation
 
-// MARK: - Response models (mirror openapi.yaml HikeResponse)
+// MARK: - Response models (mirror openapi.yaml HikeResponseV3)
+// No start/end: v3 never sends them back — the app is the only place a
+// hike's date lives, and it already knows the window it asked for.
 
 struct HikeResponse: Codable {
     let id: String
-    let start: Date
-    let end: Date
     let meetingPoint: MeetingPoint
     let trails: [String]
-    let map: MapRef
+    let map: MapRef?
+    let mapAvailable: Bool
     let weatherAvailable: Bool
     let weather: Weather?
 }
@@ -37,7 +38,8 @@ struct MapRef: Codable {
 struct Weather: Codable {
     let startTempF: Double
     let endTempF: Double
-    let conditions: String
+    let startConditions: String
+    let endConditions: String
     let precipitation: Precipitation
     let heatIndexF: Double?
     let windChillF: Double?
@@ -95,6 +97,7 @@ enum HikeAPIError: LocalizedError {
     case badID
     case unauthorized
     case notFound
+    case badWindow
     case server
     case tooLarge
 
@@ -104,6 +107,7 @@ enum HikeAPIError: LocalizedError {
         case .badID:         return "This hike's API ID isn't valid."
         case .unauthorized:  return "API key rejected — check it in Settings."
         case .notFound:      return "No hike with that ID on the server."
+        case .badWindow:     return "Check the hike's start and end times."
         case .server:        return "The trail-info server had a problem. Try again later."
         case .tooLarge:      return "The server response was too large to read."
         }
@@ -150,7 +154,25 @@ enum LocationListState: Equatable {
 enum HikeAPI {
     static let baseURLKey = "hikeAPIBaseURL"   // UserDefaults (not secret)
     static let apiKeyAccount = "hikeAPIKey"    // Keychain account (secret)
-    static let apiVersion = "2"                // x-api-version header → v2 responses
+    static let apiVersion = "3"                // x-api-version header → v3 responses
+
+    /// Formats the hike window's `start`/`end` query parameters: RFC 3339 with
+    /// the device's own offset, since v3 has no other source for the hike's date.
+    static let windowFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        f.timeZone = .current
+        return f
+    }()
+
+    /// The `start`/`end` query items `fetch` sends — pure, so the formatting is
+    /// unit-tested without a network call.
+    static func windowQueryItems(start: Date, end: Date) -> [URLQueryItem] {
+        [
+            URLQueryItem(name: "start", value: windowFormatter.string(from: start)),
+            URLQueryItem(name: "end", value: windowFormatter.string(from: end))
+        ]
+    }
 
     // Location-mapping cache (UserDefaults, not secret).
     static let locationsCacheKey = "hikeLocationsCache"
@@ -167,7 +189,10 @@ enum HikeAPI {
         return (url, key)
     }
 
-    static func fetch(id: String) async throws -> HikeResponse {
+    // Fetches trail info for `id` over the hike's `[start, end]` window — the
+    // only place that window is stored; the API's own record carries no date.
+    // @spec TRAIL-010, TRAIL-011, TRAIL-052, TRAIL-053
+    static func fetch(id: String, start: Date, end: Date) async throws -> HikeResponse {
         guard let config else { throw HikeAPIError.notConfigured }
         // Reject path-escaping ids (`/`, `..`, query) rather than string-concatenating.
         let trimmed = id.trimmingCharacters(in: .whitespaces)
@@ -176,7 +201,10 @@ enum HikeAPI {
               !trimmed.contains("?"),
               !trimmed.contains("#") else { throw HikeAPIError.badID }
         // appending(path:) percent-encodes the segment.
-        let url = config.baseURL.appending(path: "hike").appending(path: trimmed)
+        let base = config.baseURL.appending(path: "hike").appending(path: trimmed)
+        var components = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        components?.queryItems = windowQueryItems(start: start, end: end)
+        guard let url = components?.url else { throw HikeAPIError.badID }
         return try await HikeResponse.decode(getData(from: url, apiKey: config.apiKey))
     }
 
@@ -196,6 +224,7 @@ enum HikeAPI {
         guard let http = response as? HTTPURLResponse else { throw HikeAPIError.server }
         switch http.statusCode {
         case 200:               break
+        case 400:               throw HikeAPIError.badWindow
         case 401:               throw HikeAPIError.unauthorized
         case 404:               throw HikeAPIError.notFound
         default:                throw HikeAPIError.server

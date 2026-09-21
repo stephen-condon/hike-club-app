@@ -34,7 +34,9 @@ Derived in `HikeDetailView` as `isEditable` (`inProgress` or `recap`), `showAtte
 
 ## The Hike Record
 
-`Hike` (`Models.swift:180-226`) holds title, date, status, `mileage`, optional `elevationGain` (feet), `qualitiesRaw`, `notes`, and `apiHikeID` (owned by `trail-info`).
+`Hike` (`Models.swift`) holds title, `date`, optional `endTime`, status, `mileage`, optional `elevationGain` (feet), `qualitiesRaw`, `notes`, and `apiHikeID` (owned by `trail-info`).
+
+`date` and `endTime` are the hike's entire date/time record — the API's own record carries none, so this is the only place a hike's date lives (see [[trail-info]] and the workspace's `system-design.md` Seam 1). `date` carries a time as well as a day; `effectiveEndTime` reads `endTime` if the owner set one, else `date` plus two hours (`Hike.defaultDurationSeconds`). Both are editable, as "Starts"/"Ends", only while `planned`, same as the date's existing editability.
 
 `qualitiesRaw` is an array for SwiftData compatibility and treated as a set through the `qualities` computed property. It is the single source of truth for hike conditions — both the manual toggles and the Health import write to it, so `award-derivation` never needs to know where a quality came from.
 
@@ -83,6 +85,9 @@ Only completed hikes can be swipe-deleted (`HikesView.swift:41-51`), behind a co
 | Health import scope | Same calendar day | ±1 day window; user-picked window | Marked `ponytail:` at `HealthImport.swift:55` with the widening named |
 | Elevation authority | Import wins, locks the toggle | Import suggests, owner confirms | Measured data beats a guess; manual flagging survives for non-imported hikes |
 | Partial mileage input | Keep last valid value | Zero it; reject the keystroke | Avoids wiping a number mid-edit (`HikeDetailView.swift:164`) |
+| Hike date ownership | `date`/`endTime` are the hike's only date/time record | Keep a date on the Hike Club API record too | The API record carries no date under its current version; duplicating one here would let the two disagree. See [[trail-info]]. |
+| Default hike duration | Two hours, when `endTime` is unset | Prompt for an end time before allowing Trail Info; no default, omit the end window | A flat default (`ponytail:` at `Models.swift`) needs no extra owner step before the common case; the owner can still set an explicit end. |
+| End-time picker scope | Time only, day inherited from `date` | A full end date+time picker | Matches the deferred midnight-spanning gap below rather than solving it; a full picker is the upgrade path if that gap is ever closed. |
 
 ## Open Questions & Future Decisions
 

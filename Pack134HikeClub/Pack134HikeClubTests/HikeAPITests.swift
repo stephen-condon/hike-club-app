@@ -13,20 +13,22 @@ import Foundation
 
 struct HikeResponseDecodeTests {
 
-    // Full v2 payload: weather with start/end temps, a non-expected precip, and an alert.
+    // Full v3 payload: no start/end (the app supplied the window in the
+    // request), weather with start/end temps and conditions, a non-expected
+    // precip, and an alert.
     static let full = """
     {
-      "id": "2026-08-01-ridge-loop",
-      "start": "2026-08-01T14:00:00Z",
-      "end": "2026-08-01T17:30:00Z",
+      "id": "ridge-loop",
       "meetingPoint": { "lat": 40.7, "lon": -74.0, "googleMapsUrl": "https://maps.google.com/?q=40.7,-74.0" },
       "trails": ["Ridge Loop", "Creek Spur"],
       "map": { "url": "https://cdn.example.com/map.png", "expiresAt": "2026-08-01T18:00:00Z" },
+      "mapAvailable": true,
       "weatherAvailable": true,
       "weather": {
         "startTempF": 62.5,
         "endTempF": 70.0,
-        "conditions": "Partly cloudy",
+        "startConditions": "Sunny",
+        "endConditions": "Partly cloudy",
         "precipitation": { "probabilityPct": 20, "expected": false, "startsAt": null, "endsAt": null },
         "heatIndexF": null,
         "windChillF": null,
@@ -35,20 +37,20 @@ struct HikeResponseDecodeTests {
     }
     """
 
-    // Rainy v2 payload: expected precip with a window + heat index / wind chill present.
+    // Rainy v3 payload: expected precip with a window + heat index / wind chill present.
     static let rainy = """
     {
-      "id": "2026-08-01-creek",
-      "start": "2026-08-01T14:00:00Z",
-      "end": "2026-08-01T17:00:00Z",
+      "id": "creek",
       "meetingPoint": { "lat": 1.0, "lon": 2.0, "googleMapsUrl": "https://maps.google.com/?q=1,2" },
       "trails": ["Creek"],
       "map": { "url": "https://cdn.example.com/m.png", "expiresAt": "2026-08-01T18:00:00Z" },
+      "mapAvailable": true,
       "weatherAvailable": true,
       "weather": {
         "startTempF": 55.0,
         "endTempF": 48.0,
-        "conditions": "Rain",
+        "startConditions": "Cloudy",
+        "endConditions": "Rain",
         "precipitation": {
           "probabilityPct": 80, "expected": true,
           "startsAt": "2026-08-01T15:00:00Z", "endsAt": "2026-08-01T16:00:00Z"
@@ -63,12 +65,24 @@ struct HikeResponseDecodeTests {
     // weatherAvailable false, weather null (the nullable path).
     static let noWeather = """
     {
-      "id": "2026-08-02-x",
-      "start": "2026-08-02T14:00:00Z",
-      "end": "2026-08-02T16:00:00Z",
+      "id": "x",
       "meetingPoint": { "lat": 1.0, "lon": 2.0, "googleMapsUrl": "https://maps.google.com/?q=1,2" },
       "trails": [],
       "map": { "url": "https://cdn.example.com/m.png", "expiresAt": "2026-08-02T17:00:00Z" },
+      "mapAvailable": true,
+      "weatherAvailable": false,
+      "weather": null
+    }
+    """
+
+    // mapAvailable false, map null — the hike whose map image never uploaded.
+    static let noMap = """
+    {
+      "id": "x",
+      "meetingPoint": { "lat": 1.0, "lon": 2.0, "googleMapsUrl": "https://maps.google.com/?q=1,2" },
+      "trails": [],
+      "map": null,
+      "mapAvailable": false,
       "weatherAvailable": false,
       "weather": null
     }
@@ -76,14 +90,17 @@ struct HikeResponseDecodeTests {
 
     @Test func decodesFullPayload() throws {
         let r = try HikeResponse.decode(Data(Self.full.utf8))
-        #expect(r.id == "2026-08-01-ridge-loop")
+        #expect(r.id == "ridge-loop")
         #expect(r.trails == ["Ridge Loop", "Creek Spur"])
         #expect(r.meetingPoint.lat == 40.7)
         #expect(r.meetingPoint.googleMapsUrl.scheme == "https")
-        #expect(r.map.url.absoluteString == "https://cdn.example.com/map.png")
+        #expect(r.mapAvailable == true)
+        #expect(r.map?.url.absoluteString == "https://cdn.example.com/map.png")
         #expect(r.weatherAvailable == true)
         #expect(r.weather?.startTempF == 62.5)
         #expect(r.weather?.endTempF == 70.0)
+        #expect(r.weather?.startConditions == "Sunny")
+        #expect(r.weather?.endConditions == "Partly cloudy")
         #expect(r.weather?.precipitation.probabilityPct == 20)
         #expect(r.weather?.precipitation.expected == false)
         #expect(r.weather?.precipitation.startsAt == nil)
@@ -106,9 +123,8 @@ struct HikeResponseDecodeTests {
 
     @Test func decodesISO8601Dates() throws {
         let r = try HikeResponse.decode(Data(Self.full.utf8))
-        let expected = ISO8601DateFormatter().date(from: "2026-08-01T14:00:00Z")
-        #expect(r.start == expected)
-        #expect(r.end > r.start)
+        let expected = ISO8601DateFormatter().date(from: "2026-08-01T18:00:00Z")
+        #expect(r.map?.expiresAt == expected)
     }
 
     @Test func decodesNullWeather() throws {
@@ -118,10 +134,39 @@ struct HikeResponseDecodeTests {
         #expect(r.trails.isEmpty)
     }
 
+    // @spec TRAIL-051
+    @Test func decodesNullMap() throws {
+        let r = try HikeResponse.decode(Data(Self.noMap.utf8))
+        #expect(r.mapAvailable == false)
+        #expect(r.map == nil)
+    }
+
     @Test func rejectsMalformedJSON() {
         #expect(throws: (any Error).self) {
             try HikeResponse.decode(Data("{ not json".utf8))
         }
+    }
+}
+
+// @spec TRAIL-010
+struct WindowQueryItemsTests {
+    @Test func formatsStartAndEndAsRFC3339WithTheDevicesOffset() {
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        let end = start.addingTimeInterval(2 * 60 * 60)
+        let items = HikeAPI.windowQueryItems(start: start, end: end)
+        #expect(items.map(\.name) == ["start", "end"])
+        #expect(items[0].value == HikeAPI.windowFormatter.string(from: start))
+        #expect(items[1].value == HikeAPI.windowFormatter.string(from: end))
+        // RFC 3339 with an offset, not the "Z" a UTC-pinned formatter would emit —
+        // unless the device itself is in UTC, which CI runners typically are not.
+        #expect(HikeAPI.windowFormatter.timeZone.secondsFromGMT() == TimeZone.current.secondsFromGMT())
+    }
+
+    @Test func endIsStrictlyAfterStart() {
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        let end = start.addingTimeInterval(60)
+        let items = HikeAPI.windowQueryItems(start: start, end: end)
+        #expect(items[0].value != items[1].value)
     }
 }
 

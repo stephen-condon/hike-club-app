@@ -4,6 +4,7 @@
 //
 
 import Testing
+import Foundation
 import SwiftData
 @testable import Pack134HikeClub
 
@@ -108,6 +109,21 @@ struct HikeModelTests {
     @Test func qualitiesEmptyWhenNoRawQualities() {
         let hike = Hike(title: "Test", qualitiesRaw: [])
         #expect(hike.qualities.isEmpty)
+    }
+
+    // @spec HIKE-039
+    @Test func effectiveEndTimeDefaultsToTwoHoursAfterStart() {
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        let hike = Hike(title: "Test", date: start)
+        #expect(hike.effectiveEndTime == start.addingTimeInterval(2 * 60 * 60))
+    }
+
+    // @spec HIKE-039
+    @Test func effectiveEndTimeUsesAnExplicitEndTime() {
+        let start = Date(timeIntervalSince1970: 1_790_000_000)
+        let explicitEnd = start.addingTimeInterval(45 * 60)
+        let hike = Hike(title: "Test", date: start, endTime: explicitEnd)
+        #expect(hike.effectiveEndTime == explicitEnd)
     }
 }
 

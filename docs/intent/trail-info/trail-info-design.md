@@ -49,16 +49,18 @@ The id is never typed by hand. `HikeDetailView`'s location picker (`:87-93`) set
 
 ## API Surface
 
-Version 2, declared per request via `x-api-version: 2`; omitting it would yield v1.
+Version 3, declared per request via `x-api-version: 3`; omitting it would yield v1.
 
 | Endpoint | Returns | Used for |
 |----------|---------|----------|
-| `GET /hike/{id}` | `HikeResponse` | Trail info for one hike |
+| `GET /hike/{id}?start=&end=` | `HikeResponse` | Trail info for one hike |
 | `GET /hike-locations` | `[{short_name, full_name}]` | The location picker |
 
-`HikeResponse` carries start/end times, meeting point, trails, a signed map URL with an expiry, and optional v2 weather (`startTempF`/`endTempF`, `precipitation` with probability/expected/window, `heatIndexF`, `windChillF`, alerts). Dates decode as ISO-8601. The location payload is snake_case while the hike payload is camelCase, so `HikeLocation` carries explicit `CodingKeys`.
+The hike's date lives only here, in the app — the API's own record carries none under v3. `HikeAPI.fetch(id:start:end:)` sends `[[hike].date, [hike].effectiveEndTime]` as RFC 3339 `start`/`end` query parameters, formatted with the *device's* offset (`HikeAPI.windowFormatter`), since the API has no timezone of its own to fall back on. A malformed or inverted window is a `400`, mapped to `HikeAPIError.badWindow`.
 
-Status mapping: 200 proceeds; 401, 404, and anything else map to distinct `HikeAPIError` cases with owner-readable messages.
+`HikeResponse` carries no `start`/`end` (the app already knows the window it asked for) — meeting point, trails, a nullable signed map URL with a `mapAvailable` flag, and optional v3 weather (`startTempF`/`endTempF`, `startConditions`/`endConditions`, `precipitation` with probability/expected/window, `heatIndexF`, `windChillF`, alerts). Dates that remain (map `expiresAt`, precipitation window) decode as ISO-8601. The location payload is snake_case while the hike payload is camelCase, so `HikeLocation` carries explicit `CodingKeys`.
+
+Status mapping: 200 proceeds; 400 (a bad window), 401, 404, and anything else map to distinct `HikeAPIError` cases with owner-readable messages.
 
 ## Location Cache
 
@@ -80,7 +82,9 @@ An empty result replaces the cache like any other successful fetch — the serve
 
 ## Rendering
 
-`TrailInfoView` owns its own fetch state and renders into a `Section` on the hike detail page. Conditions pick an SF Symbol through `weatherSymbol(for:)`, a keyword heuristic over a free-form string — marked `ponytail:` at `HikeID.swift:31` with "swap for a `switch` if the API ever pins conditions to an enum."
+`TrailInfoView` owns its own fetch state and renders into a `Section` on the hike detail page. Conditions pick an SF Symbol through `weatherSymbol(for:)`, a keyword heuristic over a free-form string — marked `ponytail:` at `HikeID.swift:31` with "swap for a `switch` if the API ever pins conditions to an enum." The icon row and the weather symbol use `startConditions`; `endConditions` is shown alongside `endTempF` as a plain row, mirroring the start/end pairing the wire format already uses for temperature.
+
+A response's `map` is nullable under v3: `nil` renders "No map for this trail" (the map image never uploaded), distinct from a present map at a non-`https` URL or one that fails to load, both of which render "Map unavailable" as before.
 
 The map image is fetched exactly once per fetch and held as a `UIImage`, then handed to `ZoomableImageView` for full-screen pinch/pan/double-tap. Passing the loaded image rather than the URL means zooming can never fail on an expired signed URL. `ZoomableScrollView` wraps `UIScrollView` so the gestures are the platform's, not reimplemented.
 
@@ -102,6 +106,12 @@ The map image is fetched exactly once per fetch and held as a `UIImage`, then ha
 | Weather symbol | Keyword heuristic | Exhaustive `switch`; server-supplied icon | The field is free-form; `ponytail:` names the upgrade |
 | Map zoom | Pass the loaded `UIImage` | Re-fetch the URL in the zoom view | The URL is signed and expiring; re-fetching could fail after the image was already on screen |
 | Test boundary | Pure helpers tested, I/O not | Mock `URLSession`; integration tests | Mirrors the split already used by `HealthImport` |
+| Hike window ownership | The app sends `start`/`end` per request (v3) | Keep the date on the API record (v2); a server-side "current hike" concept | The API's own record carries no date at all under v3 — see [[hikes]] and the API's `system-design.md`. The app is the only place a hike's date lives, so it is the only place that can send it. |
+| Window timestamp offset | The device's own `TimeZone.current` | UTC; the (unknown to the app) preserve's offset | The app has no way to know a preserve's timezone; the device's own offset is the only one it can state truthfully. |
+
+## No-Map State
+
+Under v3, `map` is nullable and paired with a `mapAvailable` flag. `TrailInfoView` shows one of three states for the map slot: the loaded image (with zoom), "Map unavailable" (an `https` map present but its image failed to load, or a non-`https` URL rejected outright), or "No map for this trail" (`map` is `nil` — the hike's map image was never uploaded). This closes the app half of `api:API-RESP-010`.
 
 ## Open Questions & Future Decisions
 
