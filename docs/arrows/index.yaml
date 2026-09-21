@@ -1,0 +1,116 @@
+schema_version: 2
+last_updated: 2026-09-20
+
+taxonomy:
+  roster-and-hikes:
+    - scouts
+    - hikes
+  awards:
+    - award-derivation
+    - award-handout
+  supply-and-events:
+    - inventory
+    - ceremonies
+  integrations: standalone
+  platform: standalone
+
+arrows:
+  scouts:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: [hikes, award-derivation, app-shell]
+    blockedBy: []
+    detail: scouts.md
+    next: "Flesh out the LLD: confirm the 3 [inferred] decisions, then resolve whether the roster needs a re-import path."
+    drift: null
+
+  hikes:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: [award-derivation, trail-info]
+    blockedBy: [scouts]
+    detail: hikes.md
+    next: "Flesh out the LLD: decide whether attendance toggle-off should warn before discarding a scout quality."
+    drift: null
+
+  award-derivation:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: [award-handout, ceremonies]
+    blockedBy: [scouts, hikes]
+    detail: award-derivation.md
+    next: "Flesh out the LLD: decide what happens when the earned set shrinks below what was already given."
+    drift: null
+
+  award-handout:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: [ceremonies]
+    blockedBy: [award-derivation, inventory]
+    detail: award-handout.md
+    next: "Flesh out the LLD: decide whether un-giving a badge whose give was floored at zero should be a no-op."
+    drift: null
+
+  inventory:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: [award-handout, ceremonies]
+    blockedBy: []
+    detail: inventory.md
+    next: "Flesh out the LLD: reconcile the two low-stock definitions, or record why they differ."
+    drift: null
+
+  ceremonies:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: [app-shell]
+    blockedBy: [award-derivation, award-handout, inventory]
+    detail: ceremonies.md
+    next: "Flesh out the LLD: decide whether per-scout exclusions should persist, and define what reopening a completed ceremony does to awards already given (the reversibility tenet leans toward allowing it)."
+    drift: null
+
+  trail-info:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: []
+    blockedBy: [hikes]
+    detail: trail-info.md
+    next: "Fix the documented id scheme, then flesh out the LLD."
+    drift: "CLAUDE.md documents HikeID.make(date:slug:), HikeID.slug(from:), yyyy-MM-dd- prefixed ids, and an .onChange(of: hike.date) re-sync — none exist. Ids have been bare location slugs since a9c0477. HikeDetailView.swift:86 carries the same stale comment."
+
+  app-shell:
+    status: MAPPED
+    parent: null
+    sampled: 2026-09-20
+    audited: 2026-09-20
+    audited_sha: d0f04932160acbd7924d0042f94313708faf6e57
+    blocks: []
+    blockedBy: [scouts, ceremonies]
+    detail: app-shell.md
+    next: "Flesh out the LLD: decide how a store that cannot open should be handled. No test coverage in this segment."
+    drift: null
+
+unmapped:
+  docs:
+    intent: []
