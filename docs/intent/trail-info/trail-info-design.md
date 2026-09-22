@@ -60,7 +60,13 @@ The hike's date lives only here, in the app — the API's own record carries non
 
 `HikeResponse` carries no `start`/`end` (the app already knows the window it asked for) — meeting point, trails, a nullable signed map URL with a `mapAvailable` flag, and optional v3 weather (`startTempF`/`endTempF`, `startConditions`/`endConditions`, `precipitation` with probability/expected/window, `heatIndexF`, `windChillF`, alerts). Dates that remain (map `expiresAt`, precipitation window) decode as ISO-8601. The location payload is snake_case while the hike payload is camelCase, so `HikeLocation` carries explicit `CodingKeys`.
 
-Status mapping: 200 proceeds; 400 (a bad window), 401, 404, and anything else map to distinct `HikeAPIError` cases with owner-readable messages.
+Status mapping: 200 proceeds; 400, 401, 404, 410, and anything else map to distinct `HikeAPIError` cases with owner-readable messages. A 400 means different things on the two endpoints the app calls — a rejected `start`/`end` window on `/hike/{id}`, but never on `/hike-locations`, which takes no query parameters — so the caller supplies which error a 400 means; `fetch` passes the window-specific message, `fetchLocations` the generic server one. 410 means the app's declared `x-api-version` is past its sunset and is no longer served at all, distinct from the advisory `Sunset` header below — it always means "update the app."
+
+## Version Sunset
+
+The API advertises a deprecated version's retirement with `Deprecation`, `Sunset`, and `Link` response headers (see the workspace's `docs/system-design.md`) before it starts responding 410. Every successful or error response is checked for a `Sunset` header: when present, its date is parsed and stored in `UserDefaults`; when absent, any previously stored date is cleared, so the note below disappears once the app is back on a current version. The three headers, when present, are also logged once per response via `os.Logger` — visibility that stops at the device's own Console unless someone goes looking, which is why the Settings note exists too.
+
+While a sunset date is stored, Settings shows it next to the API configuration: "API version 3 retires on \<date\>. Update the app before then." This is the only owner-visible warning of an approaching cutoff; the 410 handling above is what happens if the app is still in the field after the cutoff passes.
 
 ## Location Cache
 
@@ -82,11 +88,15 @@ An empty result replaces the cache like any other successful fetch — the serve
 
 ## Rendering
 
-`TrailInfoView` owns its own fetch state and renders into a `Section` on the hike detail page. Conditions pick an SF Symbol through `weatherSymbol(for:)`, a keyword heuristic over a free-form string — marked `ponytail:` at `HikeID.swift:31` with "swap for a `switch` if the API ever pins conditions to an enum." The icon row and the weather symbol use `startConditions`; `endConditions` is shown alongside `endTempF` as a plain row, mirroring the start/end pairing the wire format already uses for temperature.
+`TrailInfoView` owns its own fetch state and renders into a `Section` on the hike detail page. Conditions pick an SF Symbol through `weatherSymbol(for:)`, a keyword heuristic over a free-form string — marked `ponytail:` at `HikeID.swift:31` with "swap for a `switch` if the API ever pins conditions to an enum." `startConditions` and `endConditions` render as one row (`conditionsSummary(start:end:)`, `HikeID.swift`): the phrase alone when the two match (case-insensitive), or `"<start> → <end>"` when they differ, so a hike that starts clear and ends in thunderstorms reads as one line rather than two. The row's icon is whichever end's `weatherSymbol` ranks more severe on a fixed severity ordering (thunder/snow > rain > fog > overcast > partly cloudy > clear), so the icon always names the worse condition the scout will face.
+
+Each alert's icon comes from its `type` (`alertSymbol(for:)`, `HikeID.swift`) — `precip`, `heat_index`, and `wind_chill` each get a matching symbol; `nws_alert` and any type the app doesn't recognize fall back to the warning triangle used for all alerts before this, so a new server-side alert type still renders.
 
 A response's `map` is nullable under v3: `nil` renders "No map for this trail" (the map image never uploaded), distinct from a present map at a non-`https` URL or one that fails to load, both of which render "Map unavailable" as before.
 
 The map image is fetched exactly once per fetch and held as a `UIImage`, then handed to `ZoomableImageView` for full-screen pinch/pan/double-tap. Passing the loaded image rather than the URL means zooming can never fail on an expired signed URL. `ZoomableScrollView` wraps `UIScrollView` so the gestures are the platform's, not reimplemented.
+
+Because the fetched response answers for the window it was requested with, editing the hike's Starts/Ends pickers after a fetch clears the displayed info (map image included) rather than leaving it on screen mislabeled as current — the section reverts to its pre-fetch "Fetch trail info" state and the owner fetches again for the new window. This is deliberately not an auto-refetch: fetching stays owner-triggered.
 
 ## Decisions & Alternatives
 
@@ -108,6 +118,12 @@ The map image is fetched exactly once per fetch and held as a `UIImage`, then ha
 | Test boundary | Pure helpers tested, I/O not | Mock `URLSession`; integration tests | Mirrors the split already used by `HealthImport` |
 | Hike window ownership | The app sends `start`/`end` per request (v3) | Keep the date on the API record (v2); a server-side "current hike" concept | The API's own record carries no date at all under v3 — see [[hikes]] and the API's `system-design.md`. The app is the only place a hike's date lives, so it is the only place that can send it. |
 | Window timestamp offset | The device's own `TimeZone.current` | UTC; the (unknown to the app) preserve's offset | The app has no way to know a preserve's timezone; the device's own offset is the only one it can state truthfully. |
+| 400 scope | Caller-supplied error (window message on `/hike`, generic on `/hike-locations`) | One shared "check start/end" message for any 400 | `/hike-locations` takes no query parameters, so a 400 there can never mean a bad window; a shared message would misdirect the owner. |
+| Sunset visibility | Settings note + one `os.Logger` line per response | Log only (issue's literal ask); a blocking alert | A log-only warning is invisible on a personal device nobody is watching in Console; a blocking alert is disruptive for a date over a month out. Settings is where the owner already looks to manage the API config. |
+| 410 handling | Distinct "update the app" error | Reuse the generic server-problem message | 410 has one specific, actionable cause (a retired version) that the generic message would hide. |
+| Start/end conditions display | One row, arrow between phrases when they differ, icon from the more severe end | Two separate rows (start conditions with icon, end conditions plain) | A hike that starts clear and ends in storms is one fact ("it gets worse"), not two rows to cross-reference; the icon should warn about the worse condition, not just the first. |
+| Alert icon | Matched to the alert's `type` | One warning-triangle icon for every alert | The API already classifies each alert (`precip`/`nws_alert`/`heat_index`/`wind_chill`); a shared icon throws that classification away. |
+| Stale info after a window edit | Clear the fetched response on any Starts/Ends change | Leave it on screen; auto-refetch | Leaving it on screen understates that it answered for the old window; auto-refetch would make the network call owner-triggered no longer. |
 
 ## No-Map State
 

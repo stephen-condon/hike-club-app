@@ -37,6 +37,13 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.red)
                     }
+                    // @spec TRAIL-057
+                    if let sunset = HikeAPI.storedSunsetDate() {
+                        let date = sunset.formatted(date: .abbreviated, time: .omitted)
+                        Text("API version \(HikeAPI.apiVersion) retires on \(date). Update the app before then.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                 }
 
                 Section("API Key") {

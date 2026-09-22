@@ -304,3 +304,95 @@ struct WeatherSymbolTests {
         #expect(weatherSymbol(for: "Whatever") == "cloud")            // default
     }
 }
+
+// @spec TRAIL-054
+struct ConditionsSummaryTests {
+    @Test func sameConditionsShowOnce() {
+        let s = conditionsSummary(start: "Sunny", end: "Sunny")
+        #expect(s.text == "Sunny")
+        #expect(s.symbol == "sun.max")
+    }
+
+    @Test func matchIsCaseInsensitiveAndTrimmed() {
+        let s = conditionsSummary(start: " Sunny ", end: "sunny")
+        #expect(s.text == "Sunny")
+    }
+
+    @Test func differingConditionsJoinWithAnArrow() {
+        let s = conditionsSummary(start: "Sunny", end: "Thunderstorms")
+        #expect(s.text == "Sunny → Thunderstorms")
+        #expect(s.symbol == "cloud.bolt.rain")  // the more severe end wins the icon
+    }
+
+    @Test func iconPicksTheMoreSevereEndRegardlessOfOrder() {
+        #expect(conditionsSummary(start: "Thunderstorms", end: "Sunny").symbol == "cloud.bolt.rain")
+        #expect(conditionsSummary(start: "Cloudy", end: "Snow").symbol == "cloud.snow")
+    }
+}
+
+// @spec TRAIL-059
+struct AlertSymbolTests {
+    @Test func mapsKnownTypes() {
+        #expect(alertSymbol(for: "precip") == "cloud.rain.fill")
+        #expect(alertSymbol(for: "heat_index") == "thermometer.sun.fill")
+        #expect(alertSymbol(for: "wind_chill") == "thermometer.snowflake")
+        #expect(alertSymbol(for: "nws_alert") == "exclamationmark.triangle.fill")
+    }
+
+    @Test func fallsBackForAnUnrecognizedType() {
+        #expect(alertSymbol(for: "some_future_type") == "exclamationmark.triangle.fill")
+    }
+}
+
+// @spec TRAIL-053, TRAIL-017, TRAIL-055
+struct StatusErrorMappingTests {
+    @Test func mapsEachStatusToItsError() {
+        #expect(HikeAPI.error(for: 200, badRequestError: .badWindow) == nil)
+        #expect(HikeAPI.error(for: 401, badRequestError: .badWindow) == .unauthorized)
+        #expect(HikeAPI.error(for: 404, badRequestError: .badWindow) == .notFound)
+        #expect(HikeAPI.error(for: 410, badRequestError: .badWindow) == .apiRetired)
+        #expect(HikeAPI.error(for: 503, badRequestError: .badWindow) == .server)
+    }
+
+    @Test func fourHundredUsesTheCallersMeaning() {
+        // /hike/{id}: a 400 means the window was rejected.
+        #expect(HikeAPI.error(for: 400, badRequestError: .badWindow) == .badWindow)
+        // /hike-locations: no query parameters to reject, so a 400 is a generic server problem.
+        #expect(HikeAPI.error(for: 400, badRequestError: .server) == .server)
+    }
+}
+
+// @spec TRAIL-056, TRAIL-057
+struct SunsetTests {
+    private func isolatedDefaults() -> UserDefaults {
+        UserDefaults(suiteName: "SunsetTests-\(UUID().uuidString)")!
+    }
+
+    @Test func parsesAnHTTPDateSunsetHeader() {
+        let date = HikeAPI.sunsetDate(from: "Wed, 18 Nov 2026 00:00:00 GMT")
+        #expect(date != nil)
+        #expect(Calendar(identifier: .gregorian).component(.year, from: date!) == 2026)
+    }
+
+    @Test func rejectsAGarbledHeader() {
+        #expect(HikeAPI.sunsetDate(from: "not a date") == nil)
+    }
+
+    @Test func recordsTheSunsetDateFromAResponse() {
+        let defaults = isolatedDefaults()
+        let response = HTTPURLResponse(
+            url: URL(string: "https://example.com/hike/x")!, statusCode: 200, httpVersion: nil,
+            headerFields: ["Sunset": "Wed, 18 Nov 2026 00:00:00 GMT", "Deprecation": "true"])!
+        HikeAPI.recordSunsetIfPresent(from: response, in: defaults)
+        #expect(HikeAPI.storedSunsetDate(in: defaults) != nil)
+    }
+
+    @Test func clearsAPreviouslyStoredDateWhenTheHeaderIsAbsent() {
+        let defaults = isolatedDefaults()
+        defaults.set(Date(), forKey: HikeAPI.sunsetKey)
+        let response = HTTPURLResponse(
+            url: URL(string: "https://example.com/hike/x")!, statusCode: 200, httpVersion: nil, headerFields: [:])!
+        HikeAPI.recordSunsetIfPresent(from: response, in: defaults)
+        #expect(HikeAPI.storedSunsetDate(in: defaults) == nil)
+    }
+}

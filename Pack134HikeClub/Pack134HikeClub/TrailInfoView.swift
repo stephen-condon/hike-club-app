@@ -44,6 +44,17 @@ struct TrailInfoView: View {
         } message: {
             Text(message ?? "")
         }
+        // @spec TRAIL-060
+        .onChange(of: start) { clearFetchedInfo() }
+        .onChange(of: end) { clearFetchedInfo() }
+    }
+
+    /// A fetched response answers for the window it was requested with — clear it
+    /// when that window changes so a stale answer never reads as current.
+    private func clearFetchedInfo() {
+        info = nil
+        mapImage = nil
+        mapFailed = false
     }
 
     private var fetchButton: some View {
@@ -107,14 +118,14 @@ struct TrailInfoView: View {
         weatherRows(info)
     }
 
-    // @spec TRAIL-054
+    // @spec TRAIL-054, TRAIL-059
     @ViewBuilder
     private func weatherRows(_ info: HikeResponse) -> some View {
         if info.weatherAvailable, let weather = info.weather {
-            Label(weather.startConditions, systemImage: weatherSymbol(for: weather.startConditions))
+            let summary = conditionsSummary(start: weather.startConditions, end: weather.endConditions)
+            Label(summary.text, systemImage: summary.symbol)
             LabeledContent("Start temp", value: tempString(weather.startTempF))
             LabeledContent("End temp", value: tempString(weather.endTempF))
-            LabeledContent("End conditions", value: weather.endConditions)
             if let heat = weather.heatIndexF {
                 LabeledContent("Heat index", value: tempString(heat))
             }
@@ -123,7 +134,7 @@ struct TrailInfoView: View {
             }
             LabeledContent("Precipitation", value: precipString(weather.precipitation))
             ForEach(Array(weather.alerts.enumerated()), id: \.offset) { _, alert in
-                Label(alert.message, systemImage: "exclamationmark.triangle.fill")
+                Label(alert.message, systemImage: alertSymbol(for: alert.type))
                     .foregroundStyle(.orange)
             }
         } else {
