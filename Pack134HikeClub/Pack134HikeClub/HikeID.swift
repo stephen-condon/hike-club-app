@@ -41,3 +41,37 @@ func weatherSymbol(for conditions: String) -> String {
     if c.contains("clear") || c.contains("sun") { return "sun.max" }
     return "cloud"
 }
+
+// Symbol severity, most severe first — decides which of a start/end conditions
+// pair's icons wins in `conditionsSummary`.
+private let conditionsSeverity = [
+    "cloud.bolt.rain", "cloud.snow", "cloud.rain", "cloud.fog", "cloud", "cloud.sun", "sun.max"
+]
+
+// @spec TRAIL-054
+/// Combines a hike's start/end conditions into one phrase and icon: the shared phrase
+/// when they match (case-insensitive), otherwise both joined by an arrow; the icon is
+/// whichever end's `weatherSymbol` ranks more severe. Pure + unit-tested.
+func conditionsSummary(start: String, end: String) -> (text: String, symbol: String) {
+    let start = start.trimmingCharacters(in: .whitespaces)
+    let end = end.trimmingCharacters(in: .whitespaces)
+    let text = start.caseInsensitiveCompare(end) == .orderedSame ? start : "\(start) → \(end)"
+    let startSymbol = weatherSymbol(for: start)
+    let endSymbol = weatherSymbol(for: end)
+    func rank(_ symbol: String) -> Int { conditionsSeverity.firstIndex(of: symbol) ?? conditionsSeverity.count }
+    let symbol = rank(startSymbol) <= rank(endSymbol) ? startSymbol : endSymbol
+    return (text, symbol)
+}
+
+// @spec TRAIL-059
+/// SF Symbol for an alert's `type` (`precip`/`heat_index`/`wind_chill`/`nws_alert`),
+/// falling back to the shared warning triangle for `nws_alert` and any type the app
+/// doesn't recognize (the server can add alert types the app hasn't seen yet).
+func alertSymbol(for type: String) -> String {
+    switch type {
+    case "precip":      return "cloud.rain.fill"
+    case "heat_index":  return "thermometer.sun.fill"
+    case "wind_chill":  return "thermometer.snowflake"
+    default:            return "exclamationmark.triangle.fill"
+    }
+}

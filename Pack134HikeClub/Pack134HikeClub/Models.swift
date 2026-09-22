@@ -180,7 +180,13 @@ class Scout {
 @Model
 class Hike {
     var title: String
+    // The hike's start — the only date/time the app used to send to the API;
+    // now, together with `endTime`, the window it sends instead of the API
+    // ever knowing the hike's date.
     var date: Date
+    // End of the hike window; nil means "not set", not "unknown duration" —
+    // `effectiveEndTime` supplies the default.
+    var endTime: Date?
     var status: HikeStatus
     var mileage: Double
     // Feet, nil until imported from a HealthKit hiking workout
@@ -197,6 +203,16 @@ class Hike {
     // Matterhorn is earned for hikes with at least this much elevation gain.
     static let matterhornElevationFeet = 100.0
 
+    // ponytail: a flat default rather than a per-location typical duration.
+    static let defaultDurationSeconds: TimeInterval = 2 * 60 * 60
+
+    // The end of the hike window sent to the Trail Info API: `endTime` if the
+    // owner set one, else two hours after `date`.
+    // @spec HIKE-039
+    var effectiveEndTime: Date {
+        endTime ?? date.addingTimeInterval(Hike.defaultDurationSeconds)
+    }
+
     /// True when imported elevation clears the Matterhorn threshold. nil elevation (not imported) → false.
     static func earnsMatterhorn(elevationFeet: Double?) -> Bool {
         guard let feet = elevationFeet else { return false }
@@ -206,6 +222,7 @@ class Hike {
     init(
         title: String,
         date: Date = .now,
+        endTime: Date? = nil,
         status: HikeStatus = .planned,
         mileage: Double = 0,
         elevationGain: Double? = nil,
@@ -215,6 +232,7 @@ class Hike {
     ) {
         self.title = title
         self.date = date
+        self.endTime = endTime
         self.status = status
         self.mileage = mileage
         self.elevationGain = elevationGain

@@ -14,14 +14,20 @@
 
 ## Requests
 
-- [x] **TRAIL-010**: The system shall send the stored API key as an x-api-key header and the value 2 as an x-api-version header on every Hike Club API request.
+- [x] **TRAIL-010**: The system shall send the stored API key as an x-api-key header and the value 3 as an x-api-version header on every Hike Club API request.
 - [x] **TRAIL-011**: When the owner fetches trail info for a hike, the system shall issue a GET request to /hike/{id} using that hike's API id.
+- [x] **TRAIL-052**: When fetching trail info for a hike, the system shall send that hike's date and effective end time as RFC 3339 start and end query parameters, formatted in the device's own time zone offset, since the API stores no date of its own under version 3.
+- [x] **TRAIL-053**: If a trail-info request (`GET /hike/{id}`) returns status 400, then the system shall report that the hike's start and end times should be checked.
+- [x] **TRAIL-055**: If a Hike Club API request returns status 410, then the system shall report that the app's API version has been retired and the app needs updating.
+- [x] **TRAIL-056**: When a Hike Club API response carries a Sunset header, the system shall parse and store its date; when a response carries no Sunset header, the system shall clear any previously stored date.
+- [x] **TRAIL-057**: While a Sunset date is stored, the Settings view shall show the API version and the stored retirement date, advising the owner to update the app.
+- [x] **TRAIL-058**: When a Hike Club API response carries a Deprecation, Sunset, or Link header, the system shall log their values once for that response.
 - [x] **TRAIL-012**: If a hike's API id is empty, or contains a slash, question mark, or hash character, then the system shall reject the trail info request without issuing it.
 - [x] **TRAIL-013**: When building a Hike Club API request URL, the system shall append the hike id as a percent-encoded path segment rather than concatenating it into the URL string.
 - [x] **TRAIL-014**: If a Hike Club API response body exceeds 5 MB, then the system shall reject that response.
 - [x] **TRAIL-015**: If a Hike Club API request returns status 401, then the system shall report that the API key was rejected.
 - [x] **TRAIL-016**: If a Hike Club API request returns status 404, then the system shall report that no hike with that id exists on the server.
-- [x] **TRAIL-017**: If a Hike Club API request returns any other non-200 status, or a response that is not an HTTP response, then the system shall report a server problem.
+- [x] **TRAIL-017**: If a Hike Club API request returns any non-200 status not otherwise specified — including a 400 from `/hike-locations`, which takes no query parameters to reject — or a response that is not an HTTP response, then the system shall report a server problem.
 - [x] **TRAIL-018**: The system shall decode date-time fields in Hike Club API responses as ISO-8601.
 - [x] **TRAIL-019**: The system shall decode the hike-locations payload's snake_case short_name and full_name fields.
 - [x] **TRAIL-020**: If a Hike Club API response cannot be decoded, then the system shall report the failure and leave the trail info section unchanged.
@@ -64,3 +70,7 @@
 - [x] **TRAIL-043**: If a trail info response reports weather as unavailable, then the system shall state that weather is unavailable.
 - [x] **TRAIL-044**: The trail info section shall show the meeting point's coordinates, and shall offer a maps link where the response's maps URL uses the https scheme.
 - [x] **TRAIL-045**: The full-screen trail map viewer shall support pinch, pan, and double-tap zoom up to four times actual size.
+- [x] **TRAIL-051**: If a trail info response carries no map, then the system shall show that no map exists for that trail, distinct from the message shown when a present map fails to load.
+- [x] **TRAIL-054**: Where a trail info response reports weather as available, the system shall show conditions at both the start and the end of the hike window as one phrase — the shared phrase when they match, or the start phrase and the end phrase joined by an arrow when they differ — with an icon chosen from whichever end is more severe.
+- [x] **TRAIL-059**: The system shall choose an alert's icon from its type, falling back to a generic warning icon for a type it does not recognize.
+- [x] **TRAIL-060**: When the owner changes a hike's start or end time, the system shall clear any trail info already fetched for that hike.

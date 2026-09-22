@@ -7,7 +7,8 @@
 - [x] **HIKE-003**: While a hike is in progress, the system shall offer exactly one transition, to recap.
 - [x] **HIKE-004**: While a hike is in recap, the system shall offer exactly one transition, to complete.
 - [x] **HIKE-005**: While a hike is complete, the system shall offer exactly one transition, back to recap.
-- [x] **HIKE-006**: While a hike is planned, the system shall allow the owner to edit that hike's title, date, and location.
+- [x] **HIKE-006**: While a hike is planned, the system shall allow the owner to edit that hike's title, date, end time, and location.
+- [x] **HIKE-039**: The system shall compute a hike's effective end time as its explicit end time if one is set, otherwise as two hours after its date.
 - [x] **HIKE-007**: While a hike is in progress or in recap, the system shall allow the owner to edit that hike's title, attendance, mileage, notes, and hike qualities.
 - [x] **HIKE-008**: While a hike is in progress or in recap, the system shall display that hike's date and location as read-only.
 - [x] **HIKE-009**: While a hike is planned, the system shall hide that hike's attendance and hike-detail sections.
