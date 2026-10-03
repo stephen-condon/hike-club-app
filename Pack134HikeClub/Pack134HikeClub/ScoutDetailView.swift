@@ -82,7 +82,8 @@ struct ScoutDetailView: View {
                         Text("Return Stick")
                     }
                 } else {
-                    Text(scout.stickEarned ? "Earned — not yet awarded" : "Not earned")
+                    Text(scout.hasEarnedStick(completedHikes: completedHikes)
+                         ? "Earned — not yet awarded" : "Not earned")
                         .foregroundStyle(.secondary)
                     Button {
                         assignStick()

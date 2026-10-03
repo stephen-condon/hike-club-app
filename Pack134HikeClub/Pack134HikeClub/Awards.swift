@@ -28,6 +28,14 @@ extension Scout {
         return startingMileage + attended.reduce(0) { $0 + $1.mileage }
     }
 
+    static let stickMileage = 10.0
+
+    // @spec AWARD-DERV-022
+    /// The stick is earned at 10 cumulative miles; `stickEarned` overrides (roster import, hand award).
+    func hasEarnedStick(completedHikes: [Hike]) -> Bool {
+        stickEarned || cumulativeMileage(completedHikes: completedHikes) >= Scout.stickMileage
+    }
+
     /// Full set of earned badges derived from seeded badges, mileage, hike qualities, and scout qualities.
     func earnedBadges(completedHikes: [Hike]) -> Set<BadgeType> {
         let attended = attendedHikes(from: completedHikes)

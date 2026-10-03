@@ -15,13 +15,14 @@ extension Scout {
         earnedBadges(completedHikes: completedHikes).subtracting(givenBadges)
     }
 
-    /// Stick decision made (ceremony-earned) but not yet physically awarded.
-    var hasPendingStick: Bool {
-        stickEarned && stickAssignment == nil
+    // @spec AWARD-DERV-020
+    /// Stick earned but not yet physically awarded.
+    func hasPendingStick(completedHikes: [Hike]) -> Bool {
+        hasEarnedStick(completedHikes: completedHikes) && stickAssignment == nil
     }
 
     func hasPendingAwards(completedHikes: [Hike]) -> Bool {
-        !pendingBadges(completedHikes: completedHikes).isEmpty || hasPendingStick
+        !pendingBadges(completedHikes: completedHikes).isEmpty || hasPendingStick(completedHikes: completedHikes)
     }
 
     /// Gives every pending badge and, if pending, assigns the stick — reusing ScoutActions
@@ -33,7 +34,7 @@ extension Scout {
         inventory: [InventoryItem]
     ) -> (badges: [BadgeType], stickGiven: Bool) {
         let badges = pendingBadges(completedHikes: completedHikes)
-        let stickGiven = hasPendingStick
+        let stickGiven = hasPendingStick(completedHikes: completedHikes)
 
         for badge in badges {
             giveBadge(badge, inventory: inventory)
@@ -66,15 +67,18 @@ extension Ceremony {
 
 // MARK: - Ceremony inventory prep
 
+// @spec CEREM-010
 /// Per-InventoryKind count of pending items needed to cover every scout in `scouts`.
+/// Scouts without their stick yet receive nothing, so they need nothing.
 func ceremonyInventoryNeeds(scouts: [Scout], hikes: [Hike]) -> [InventoryKind: Int] {
     var needs: [InventoryKind: Int] = [:]
     for scout in scouts {
         let completedHikes = scout.completedHikes(from: hikes)
+        guard scout.hasEarnedStick(completedHikes: completedHikes) else { continue }
         for badge in scout.pendingBadges(completedHikes: completedHikes) {
             needs[badge.inventoryKind, default: 0] += 1
         }
-        if scout.hasPendingStick {
+        if scout.hasPendingStick(completedHikes: completedHikes) {
             needs[.hikingStick, default: 0] += 1
         }
     }
@@ -108,9 +112,11 @@ func stickBuyCount(scouts: [Scout], hikes: [Hike], inventory: [InventoryItem]) -
 
 // MARK: - Ceremony completion
 
+// @spec CEREM-015, CEREM-035
 /// Awards every pending item to each scout in `scouts` (reusing ScoutActions), snapshots a
 /// CeremonyAward per scout actually awarded, and marks the ceremony complete. Scouts left out
-/// of `scouts` (e.g. toggled off because they didn't show up) are untouched and remain pending.
+/// of `scouts` (e.g. toggled off because they didn't show up), or without their stick yet, are
+/// untouched and remain pending.
 @discardableResult
 func completeCeremony(
     _ ceremony: Ceremony,
@@ -122,6 +128,7 @@ func completeCeremony(
     var created: [CeremonyAward] = []
     for scout in scouts {
         let completedHikes = scout.completedHikes(from: hikes)
+        guard scout.hasEarnedStick(completedHikes: completedHikes) else { continue }
         let result = scout.awardAllPending(completedHikes: completedHikes, context: context, inventory: inventory)
         guard !result.badges.isEmpty || result.stickGiven else { continue }
         let award = CeremonyAward(scout: scout, badges: result.badges, stickGiven: result.stickGiven)

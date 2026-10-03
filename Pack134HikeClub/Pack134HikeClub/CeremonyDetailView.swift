@@ -19,6 +19,15 @@ struct CeremonyDetailView: View {
         scouts.filter { $0.hasPendingAwards(completedHikes: $0.completedHikes(from: allHikes)) }
     }
 
+    func hasEarnedStick(_ scout: Scout) -> Bool {
+        scout.hasEarnedStick(completedHikes: scout.completedHikes(from: allHikes))
+    }
+
+    // @spec CEREM-034
+    func isIncluded(_ scout: Scout) -> Bool {
+        hasEarnedStick(scout) && ceremony.isIncluded(scout)
+    }
+
     var needs: [InventoryKind: Int] {
         ceremonyInventoryNeeds(scouts: pendingScouts, hikes: allHikes)
     }
@@ -79,7 +88,8 @@ struct CeremonyDetailView: View {
                             PendingScoutRow(
                                 scout: scout,
                                 completedHikes: scout.completedHikes(from: allHikes),
-                                isIncluded: ceremony.isIncluded(scout),
+                                isIncluded: isIncluded(scout),
+                                canInclude: hasEarnedStick(scout),
                                 onToggle: { ceremony.toggleExcluded(scout) }
                             )
                         }
@@ -90,7 +100,7 @@ struct CeremonyDetailView: View {
                     Button("Complete Ceremony") {
                         completeCeremony(
                             ceremony,
-                            scouts: pendingScouts.filter(ceremony.isIncluded),
+                            scouts: pendingScouts.filter(isIncluded),
                             hikes: allHikes,
                             context: context,
                             inventory: inventoryItems
@@ -136,11 +146,12 @@ struct PendingScoutRow: View {
     let scout: Scout
     let completedHikes: [Hike]
     let isIncluded: Bool
+    let canInclude: Bool
     let onToggle: () -> Void
 
     var pendingItems: [String] {
         let badgeNames = scout.pendingBadges(completedHikes: completedHikes).map(\.displayName).sorted()
-        return badgeNames + (scout.hasPendingStick ? ["Hiking Stick"] : [])
+        return badgeNames + (scout.hasPendingStick(completedHikes: completedHikes) ? ["Hiking Stick"] : [])
     }
 
     var body: some View {
@@ -155,6 +166,7 @@ struct PendingScoutRow: View {
             Spacer()
             Toggle("", isOn: Binding(get: { isIncluded }, set: { _ in onToggle() }))
                 .labelsHidden()
+                .disabled(!canInclude)
         }
         .padding(.vertical, 2)
     }

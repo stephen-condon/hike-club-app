@@ -33,5 +33,6 @@
 ## Pending Awards
 
 - [x] **AWARD-DERV-019**: The system shall compute a scout's pending badges as that scout's derived earned badges minus the badges already given to that scout.
-- [x] **AWARD-DERV-020**: The system shall treat a scout's stick as pending when that scout's stick is marked earned and that scout has no stick assignment.
+- [x] **AWARD-DERV-022**: The system shall treat a scout's hiking stick as earned when that scout's cumulative mileage is at least 10 miles or that scout's stick is marked earned.
+- [x] **AWARD-DERV-020**: The system shall treat a scout's stick as pending when that scout has earned their stick and has no stick assignment.
 - [x] **AWARD-DERV-021**: The system shall treat a scout as having pending awards when that scout has at least one pending badge or a pending stick.

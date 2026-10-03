@@ -46,7 +46,9 @@ A hike contributes only when it is **both** `complete` and attended by the scout
 
 ## Pending Awards
 
-`Scout.pendingBadges(completedHikes:)` is `earnedBadges` minus `givenBadges` — the set difference between what the rules say and what was physically handed over. `hasPendingStick` is the same shape for the stick: `stickEarned && stickAssignment == nil`.
+`Scout.pendingBadges(completedHikes:)` is `earnedBadges` minus `givenBadges` — the set difference between what the rules say and what was physically handed over. `hasPendingStick(completedHikes:)` is the same shape for the stick: `hasEarnedStick && stickAssignment == nil`.
+
+`Scout.hasEarnedStick(completedHikes:)` (`Awards.swift`) is true at `Scout.stickMileage` (10) cumulative miles, or when `stickEarned` is set. Mileage is the rule. `stickEarned` is kept as an override for the roster import and for awarding a stick by hand from the scout page. The stick is also the gate for handing anything out at a ceremony (see [[ceremonies]]). A scout keeps earning badges before 10 miles but receives none until the ceremony that gives them their stick.
 
 These are the inputs every ceremony view reads. They are derived on the same terms as everything else here: computed on read, never stored, never snapshotted.
 
