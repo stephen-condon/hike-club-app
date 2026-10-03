@@ -280,3 +280,24 @@ struct AttendanceRowTests {
         #expect(row.isAttending == false)
     }
 }
+
+// MARK: - Ceremony rows
+
+struct CeremonyRowTests {
+
+    // @spec CEREM-036
+    @Test func pendingRowListsBadgesButNotStick() {
+        let scout = Scout(name: "Ben", startingMileage: 10)
+        let row = PendingScoutRow(scout: scout, completedHikes: [], isIncluded: true,
+                                  canInclude: true, onToggle: {})
+        #expect(row.showsStick)
+        #expect(row.pendingItems == [BadgeType.mile10.displayName])
+    }
+
+    // @spec CEREM-036
+    @Test func awardRowListsBadgesButNotStick() {
+        let award = CeremonyAward(scout: Scout(name: "Ben"), badges: [.mile10], stickGiven: true)
+        let row = CeremonyAwardRow(award: award)
+        #expect(row.awardedItems == [BadgeType.mile10.displayName])
+    }
+}
