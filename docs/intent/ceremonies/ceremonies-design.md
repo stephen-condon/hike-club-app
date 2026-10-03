@@ -9,9 +9,9 @@ prefix: CEREM
 
 Badges accumulate quietly for weeks and then get handed out in one evening in front of the pack. This segment is built around that evening: what to buy before it, who to call up during it, and what to remember about it afterward.
 
-The central decision is that a ceremony holds no list. It stores a title, a date, and whether it happened — the set of scouts with something coming is derived fresh every time the ceremony is opened. A ceremony scheduled in October and held in November automatically includes the badges earned in between, and nothing has to be re-synced when a hike is corrected.
+The central decision is that a ceremony holds no list of who is owed what. It stores a title, a date, whether it happened, and which scouts the owner switched off — the set of scouts with something coming is derived fresh every time the ceremony is opened. A ceremony scheduled in October and held in November automatically includes the badges earned in between, and nothing has to be re-synced when a hike is corrected.
 
-The second decision is that ceremony night is about attendance, not editing. Everyone with something pending is included by default; the owner's only job is to switch off the scouts who didn't show. Those scouts stay pending and turn up at the next ceremony on their own.
+The second decision is that ceremony night is about attendance, not editing. Everyone with something pending is included by default; the owner's only job is to switch off the scouts who didn't show. Those scouts stay pending and turn up at the next ceremony on their own. The switch-offs are saved on the ceremony, so leaving the screen mid-evening doesn't undo them.
 
 ## Live Derivation
 
@@ -31,11 +31,11 @@ The second decision is that ceremony night is about attendance, not editing. Eve
 2. Snapshot a `CeremonyAward` per scout who actually received something, attached to the ceremony
 3. Mark the ceremony complete
 
-Scouts not passed in are untouched. The view supplies `pendingScouts.filter(isIncluded)` (`CeremonyDetailView.swift:107`), so toggling a scout off means they simply never enter the function. Completion is per-scout all-or-nothing: there is no partial award within a scout.
+Scouts not passed in are untouched. The view supplies `pendingScouts.filter(ceremony.isIncluded)`, so toggling a scout off means they simply never enter the function.
+
+`Ceremony.excludedScouts` is a one-way, nullify-on-delete relationship to the scouts the owner toggled off. `Ceremony.isIncluded(_:)` and `toggleExcluded(_:)` (`Ceremonies.swift`) read and write it, so an exclusion persists with the ceremony. A scout who is excluded and then no longer pending is simply not listed. The stale entry is harmless. Completion is per-scout all-or-nothing: there is no partial award within a scout.
 
 `CeremonyAward` (`Models.swift:286-298`) is the only persisted record of what a ceremony contained. `givenBadges` knows a badge was handed over; only the award row knows which evening it happened on.
-
-**Current-state divergence:** the exclusion set is view `@State` (`CeremonyDetailView.swift:18`). Navigating away and back resets every scout to included.
 
 **Current-state divergence:** completion is one-way. There is no inverse of `completeCeremony`, and the form locks at `:47` — unlike a hike, which reopens.
 
@@ -59,7 +59,7 @@ It runs at app launch ([[app-shell]]) and on `CeremoniesView.onAppear`, which to
 | Scout inclusion | All pending, toggle off | Opt-in; per-badge selection | The realistic failure is a scout not showing up, not a scout getting the wrong badge |
 | Award granularity | Per-scout all-or-nothing | Per-badge within a scout | A scout who is present receives everything they are owed |
 | Excluded scouts | Stay pending, reappear later | Mark deferred; carry to a named next ceremony | Falls out of live derivation with no extra state |
-| Exclusion storage | View `@State` | Persisted on the ceremony | `[inferred]` — ephemeral by implementation, not by recorded choice |
+| Exclusion storage | Persisted on the ceremony (`excludedScouts`) | View `@State` (previous) | Toggling off absent scouts shouldn't be undone by navigating away |
 | Awarding path | Reuses `ScoutActions` | A ceremony-specific award routine | Inventory correctness cannot depend on which path was taken |
 | Historical record | `CeremonyAward` snapshot | Derive from `givenBadges`; nothing | `givenBadges` has no dates, so history is underivable |
 | Shortfall test | Below need **plus** reserve | Below need | Handing out should not silently eat the reserve |
@@ -72,12 +72,11 @@ It runs at app launch ([[app-shell]]) and on `CeremoniesView.onAppear`, which to
 ## Open Questions & Future Decisions
 
 ### Deferred
-1. **Exclusions are lost on navigation.** The one piece of ceremony-night state that is neither derived nor persisted. If the owner toggles off four absent scouts and taps into a scout's detail page, all four return.
-2. **No way to reopen a completed ceremony.** A mis-tapped "Complete Ceremony" hands out everything pending with no undo, and the asymmetry with the reopenable hike lifecycle is unexplained. The HLD tenet *every mistake is reversible* leans toward making completion reopenable; what reopening should do to the awards already handed out and the inventory already decremented is the open part.
-3. **Which ceremony gave which badge is only walkable one way.** From a ceremony you can see its awards; from a scout you cannot see which ceremony gave a badge.
-4. **Orphan award rows.** `CeremonyAward.scout` is nullify-on-delete (`Models.swift:289`), so deleting a scout leaves "Unknown Scout" rows in past ceremonies (`CeremonyDetailView.swift:189`).
-5. **Reminders carry a pack-wide stick count into a per-ceremony message.** With two planned ceremonies, both stick reminders quote the same number.
-6. **No reminder for a ceremony scheduled inside the lead window.** A ceremony three weeks out gets the stick reminder but never the badge reminder, silently.
+1. **No way to reopen a completed ceremony.** A mis-tapped "Complete Ceremony" hands out everything pending with no undo, and the asymmetry with the reopenable hike lifecycle is unexplained. The HLD tenet *every mistake is reversible* leans toward making completion reopenable; what reopening should do to the awards already handed out and the inventory already decremented is the open part.
+2. **Which ceremony gave which badge is only walkable one way.** From a ceremony you can see its awards; from a scout you cannot see which ceremony gave a badge.
+3. **Orphan award rows.** `CeremonyAward.scout` is nullify-on-delete (`Models.swift:289`), so deleting a scout leaves "Unknown Scout" rows in past ceremonies (`CeremonyDetailView.swift:189`).
+4. **Reminders carry a pack-wide stick count into a per-ceremony message.** With two planned ceremonies, both stick reminders quote the same number.
+5. **No reminder for a ceremony scheduled inside the lead window.** A ceremony three weeks out gets the stick reminder but never the badge reminder, silently.
 
 ## References
 

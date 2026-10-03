@@ -2,7 +2,7 @@
 
 ## Ceremony Record
 
-- [x] **CEREM-001**: The system shall store a ceremony as a title, a date, a completion flag, and the awards handed out at it.
+- [x] **CEREM-001**: The system shall store a ceremony as a title, a date, a completion flag, the scouts excluded from it, and the awards handed out at it.
 - [x] **CEREM-002**: The Ceremonies list shall show incomplete ceremonies soonest-first and complete ceremonies most-recent-first, in separate sections.
 - [x] **CEREM-003**: The system shall allow the owner to delete an incomplete ceremony from the Ceremonies list.
 - [x] **CEREM-004**: While the new-ceremony title field is empty or contains only whitespace, the system shall disable saving that ceremony.
@@ -13,6 +13,7 @@
 - [x] **CEREM-006**: The system shall derive a ceremony's pending scouts each time that ceremony is viewed, rather than recording them when the ceremony is scheduled.
 - [x] **CEREM-007**: While a ceremony is not complete, the system shall list every active scout who has at least one pending badge or a pending stick, naming what each is owed.
 - [x] **CEREM-008**: While a ceremony is not complete, the system shall include every pending scout by default and allow the owner to exclude individual scouts from it.
+- [x] **CEREM-033**: When the owner excludes a scout from a ceremony or includes them again, the system shall persist that choice with the ceremony, so it survives leaving and reopening the ceremony.
 - [x] **CEREM-009**: While a ceremony is not complete and no active scout has a pending award, the system shall say that no scouts have pending awards.
 
 ## Inventory Readiness

@@ -46,6 +46,24 @@ extension Scout {
     }
 }
 
+// MARK: - Ceremony inclusion
+
+extension Ceremony {
+
+    func isIncluded(_ scout: Scout) -> Bool {
+        !excludedScouts.contains { $0.persistentModelID == scout.persistentModelID }
+    }
+
+    // @spec CEREM-008, CEREM-033
+    func toggleExcluded(_ scout: Scout) {
+        if let idx = excludedScouts.firstIndex(where: { $0.persistentModelID == scout.persistentModelID }) {
+            excludedScouts.remove(at: idx)
+        } else {
+            excludedScouts.append(scout)
+        }
+    }
+}
+
 // MARK: - Ceremony inventory prep
 
 /// Per-InventoryKind count of pending items needed to cover every scout in `scouts`.

@@ -15,8 +15,6 @@ struct CeremonyDetailView: View {
     @Query var allHikes: [Hike]
     @Query var inventoryItems: [InventoryItem]
 
-    @State private var excludedScoutIDs: Set<PersistentIdentifier> = []
-
     var pendingScouts: [Scout] {
         scouts.filter { $0.hasPendingAwards(completedHikes: $0.completedHikes(from: allHikes)) }
     }
@@ -27,18 +25,6 @@ struct CeremonyDetailView: View {
 
     var shortfalls: [CeremonyShortfall] {
         ceremonyShortfalls(needs: needs, inventory: inventoryItems)
-    }
-
-    func isIncluded(_ scout: Scout) -> Bool {
-        !excludedScoutIDs.contains(scout.persistentModelID)
-    }
-
-    func toggleIncluded(_ scout: Scout) {
-        if excludedScoutIDs.contains(scout.persistentModelID) {
-            excludedScoutIDs.remove(scout.persistentModelID)
-        } else {
-            excludedScoutIDs.insert(scout.persistentModelID)
-        }
     }
 
     var body: some View {
@@ -93,8 +79,8 @@ struct CeremonyDetailView: View {
                             PendingScoutRow(
                                 scout: scout,
                                 completedHikes: scout.completedHikes(from: allHikes),
-                                isIncluded: isIncluded(scout),
-                                onToggle: { toggleIncluded(scout) }
+                                isIncluded: ceremony.isIncluded(scout),
+                                onToggle: { ceremony.toggleExcluded(scout) }
                             )
                         }
                     }
@@ -104,7 +90,7 @@ struct CeremonyDetailView: View {
                     Button("Complete Ceremony") {
                         completeCeremony(
                             ceremony,
-                            scouts: pendingScouts.filter(isIncluded),
+                            scouts: pendingScouts.filter(ceremony.isIncluded),
                             hikes: allHikes,
                             context: context,
                             inventory: inventoryItems

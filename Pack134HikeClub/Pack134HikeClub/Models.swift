@@ -292,6 +292,8 @@ class Ceremony {
     var isComplete: Bool
     // Historical snapshot of what was actually handed out here, populated on completion.
     @Relationship(deleteRule: .cascade) var awards: [CeremonyAward]
+    // Scouts the owner toggled off (didn't show up); everyone else pending is included.
+    @Relationship(deleteRule: .nullify) var excludedScouts: [Scout] = []
 
     init(title: String, date: Date = .now, isComplete: Bool = false) {
         self.title = title
