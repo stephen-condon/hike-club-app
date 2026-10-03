@@ -150,18 +150,27 @@ struct PendingScoutRow: View {
     let onToggle: () -> Void
 
     var pendingItems: [String] {
-        let badgeNames = scout.pendingBadges(completedHikes: completedHikes).map(\.displayName).sorted()
-        return badgeNames + (scout.hasPendingStick(completedHikes: completedHikes) ? ["Hiking Stick"] : [])
+        scout.pendingBadges(completedHikes: completedHikes).map(\.displayName).sorted()
     }
 
+    var showsStick: Bool {
+        scout.hasPendingStick(completedHikes: completedHikes)
+    }
+
+    // @spec CEREM-036
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(scout.name)
-                    .font(.headline)
-                Text(pendingItems.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text(scout.name)
+                        .font(.headline)
+                    if showsStick { HikingStickIcon() }
+                }
+                if !pendingItems.isEmpty {
+                    Text(pendingItems.joined(separator: ", "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Toggle("", isOn: Binding(get: { isIncluded }, set: { _ in onToggle() }))
@@ -178,18 +187,34 @@ struct CeremonyAwardRow: View {
     let award: CeremonyAward
 
     var awardedItems: [String] {
-        let badgeNames = award.badges.map(\.displayName).sorted()
-        return badgeNames + (award.stickGiven ? ["Hiking Stick"] : [])
+        award.badges.map(\.displayName).sorted()
     }
 
+    // @spec CEREM-036
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(award.scout?.name ?? "Unknown Scout")
-                .font(.headline)
-            Text(awardedItems.isEmpty ? "—" : awardedItems.joined(separator: ", "))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack {
+                Text(award.scout?.name ?? "Unknown Scout")
+                    .font(.headline)
+                if award.stickGiven { HikingStickIcon() }
+            }
+            if !awardedItems.isEmpty {
+                Text(awardedItems.joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 2)
+    }
+}
+
+// MARK: - HikingStickIcon
+
+/// The stick is the milestone award, so it gets an icon beside the name rather than a list entry.
+struct HikingStickIcon: View {
+    var body: some View {
+        Image(systemName: "figure.hiking")
+            .foregroundStyle(.brown)
+            .accessibilityLabel("Hiking Stick")
     }
 }

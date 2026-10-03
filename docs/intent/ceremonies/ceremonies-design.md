@@ -37,6 +37,8 @@ The third decision is that the hiking stick comes first. A scout earns it at 10 
 
 `Ceremony.excludedScouts` is a one-way, nullify-on-delete relationship to the scouts the owner toggled off. `Ceremony.isIncluded(_:)` and `toggleExcluded(_:)` (`Ceremonies.swift`) read and write it, so an exclusion persists with the ceremony. A scout who is excluded and then no longer pending is simply not listed. The stale entry is harmless. Completion is per-scout all-or-nothing: there is no partial award within a scout.
 
+Both ceremony rows (`PendingScoutRow`, `CeremonyAwardRow`) list badges only. The stick is the milestone, so it is shown as a `figure.hiking` icon beside the scout's name, labeled "Hiking Stick" for VoiceOver.
+
 `CeremonyAward` (`Models.swift:286-298`) is the only persisted record of what a ceremony contained. `givenBadges` knows a badge was handed over; only the award row knows which evening it happened on.
 
 **Current-state divergence:** completion is one-way. There is no inverse of `completeCeremony`, and the form locks at `:47` — unlike a hike, which reopens.

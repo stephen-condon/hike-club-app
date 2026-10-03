@@ -12,6 +12,7 @@
 
 - [x] **CEREM-006**: The system shall derive a ceremony's pending scouts each time that ceremony is viewed, rather than recording them when the ceremony is scheduled.
 - [x] **CEREM-007**: While a ceremony is not complete, the system shall list every active scout who has at least one pending badge or a pending stick, naming what each is owed.
+- [x] **CEREM-036**: The system shall show a scout's hiking stick in a ceremony's scout list and awards-given list as an icon beside that scout's name, not as an entry in that scout's list of awards.
 - [x] **CEREM-008**: While a ceremony is not complete, the system shall include every pending scout by default and allow the owner to exclude individual scouts from it.
 - [x] **CEREM-034**: While a ceremony is not complete, the system shall show each listed scout who has not earned their hiking stick as excluded, and shall not allow the owner to include that scout.
 - [x] **CEREM-033**: When the owner excludes a scout from a ceremony or includes them again, the system shall persist that choice with the ceremony, so it survives leaving and reopening the ceremony.
