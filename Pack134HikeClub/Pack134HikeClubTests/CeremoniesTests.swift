@@ -362,3 +362,37 @@ struct StickBuyCountTests {
         #expect(stickBuyCount(scouts: [scout], hikes: [], inventory: []) == 0)
     }
 }
+
+// MARK: - Ceremony exclusions
+
+@MainActor
+struct CeremonyExclusionTests {
+
+    // @spec CEREM-008
+    @Test func scoutsAreIncludedByDefaultAndToggle() {
+        let ceremony = Ceremony(title: "Fall Ceremony")
+        let scout = Scout(name: "Zed")
+        #expect(ceremony.isIncluded(scout))
+        ceremony.toggleExcluded(scout)
+        #expect(!ceremony.isIncluded(scout))
+        ceremony.toggleExcluded(scout)
+        #expect(ceremony.isIncluded(scout))
+    }
+
+    // @spec CEREM-001, CEREM-033
+    @Test func exclusionPersistsAcrossFetch() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let ceremony = Ceremony(title: "Fall Ceremony")
+        let scout = Scout(name: "Zed")
+        ctx.insert(ceremony)
+        ctx.insert(scout)
+        ceremony.toggleExcluded(scout)
+        try ctx.save()
+
+        let fresh = ModelContext(container)
+        let fetched = try #require(try fresh.fetch(FetchDescriptor<Ceremony>()).first)
+        let fetchedScout = try #require(try fresh.fetch(FetchDescriptor<Scout>()).first)
+        #expect(!fetched.isIncluded(fetchedScout))
+    }
+}
