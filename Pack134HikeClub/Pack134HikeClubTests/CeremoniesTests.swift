@@ -50,12 +50,12 @@ struct PendingAwardsTests {
 
     @Test func hasPendingStickTrueWhenEarnedNotAssigned() {
         let scout = Scout(name: "Dan", stickEarned: true)
-        #expect(scout.hasPendingStick)
+        #expect(scout.hasPendingStick(completedHikes: []))
     }
 
     @Test func hasPendingStickFalseWhenNotEarned() {
         let scout = Scout(name: "Eve")
-        #expect(!scout.hasPendingStick)
+        #expect(!scout.hasPendingStick(completedHikes: []))
     }
 
     @Test func hasPendingStickFalseWhenAlreadyAssigned() throws {
@@ -68,7 +68,7 @@ struct PendingAwardsTests {
 
         scout.assignStick(context: ctx, inventory: [item])
 
-        #expect(!scout.hasPendingStick)
+        #expect(!scout.hasPendingStick(completedHikes: []))
     }
 
     @Test func hasPendingAwardsFalseWhenNothingPending() {
@@ -182,9 +182,9 @@ struct AwardAllPendingTests {
 struct CeremonyInventoryNeedsTests {
 
     @Test func countsAcrossMultipleScouts() {
-        let scoutA = Scout(name: "Oscar", seededEarnedBadges: [.mile10])
-        let scoutB = Scout(name: "Pat", seededEarnedBadges: [.mile10])
-        let scoutC = Scout(name: "Quinn", seededEarnedBadges: [.polarBear])
+        let scoutA = Scout(name: "Oscar", seededEarnedBadges: [.mile10], stickEarned: true)
+        let scoutB = Scout(name: "Pat", seededEarnedBadges: [.mile10], stickEarned: true)
+        let scoutC = Scout(name: "Quinn", seededEarnedBadges: [.polarBear], stickEarned: true)
 
         let needs = ceremonyInventoryNeeds(scouts: [scoutA, scoutB, scoutC], hikes: [])
 
@@ -263,7 +263,7 @@ struct CompleteCeremonyTests {
         let ctx = container.mainContext
 
         let ceremony = Ceremony(title: "Fall Ceremony", date: .now)
-        let scout = Scout(name: "Uma", seededEarnedBadges: [.polarBear])
+        let scout = Scout(name: "Uma", seededEarnedBadges: [.polarBear], stickEarned: true)
         let item = InventoryItem(kind: .polarBear, count: 5, minReserve: 0)
         ctx.insert(ceremony)
         ctx.insert(scout)
@@ -283,8 +283,8 @@ struct CompleteCeremonyTests {
         let ctx = container.mainContext
 
         let ceremony = Ceremony(title: "Fall Ceremony", date: .now)
-        let included = Scout(name: "Victor", seededEarnedBadges: [.mile10])
-        let excluded = Scout(name: "Wendy", seededEarnedBadges: [.mile20])
+        let included = Scout(name: "Victor", seededEarnedBadges: [.mile10], stickEarned: true)
+        let excluded = Scout(name: "Wendy", seededEarnedBadges: [.mile20], stickEarned: true)
         let item10 = InventoryItem(kind: .mile10, count: 5, minReserve: 0)
         let item20 = InventoryItem(kind: .mile20, count: 5, minReserve: 0)
         ctx.insert(ceremony)

@@ -20,6 +20,7 @@ The bulk handout event — who gets what, whether stock covers it, and the remin
 ### Tests
 - Pack134HikeClub/Pack134HikeClubTests/CeremoniesTests.swift:182-364
 - Pack134HikeClub/Pack134HikeClubTests/NotificationsTests.swift
+- Pack134HikeClub/Pack134HikeClubTests/StickGateTests.swift
 
 ### Code
 - Pack134HikeClub/Pack134HikeClub/Models.swift:270-298 (Ceremony, CeremonyAward)

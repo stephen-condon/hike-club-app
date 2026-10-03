@@ -13,12 +13,13 @@
 - [x] **CEREM-006**: The system shall derive a ceremony's pending scouts each time that ceremony is viewed, rather than recording them when the ceremony is scheduled.
 - [x] **CEREM-007**: While a ceremony is not complete, the system shall list every active scout who has at least one pending badge or a pending stick, naming what each is owed.
 - [x] **CEREM-008**: While a ceremony is not complete, the system shall include every pending scout by default and allow the owner to exclude individual scouts from it.
+- [x] **CEREM-034**: While a ceremony is not complete, the system shall show each listed scout who has not earned their hiking stick as excluded, and shall not allow the owner to include that scout.
 - [x] **CEREM-033**: When the owner excludes a scout from a ceremony or includes them again, the system shall persist that choice with the ceremony, so it survives leaving and reopening the ceremony.
 - [x] **CEREM-009**: While a ceremony is not complete and no active scout has a pending award, the system shall say that no scouts have pending awards.
 
 ## Inventory Readiness
 
-- [x] **CEREM-010**: The system shall compute a ceremony's inventory needs as one item per pending badge plus one hiking stick per scout with a pending stick, counted across the scouts that ceremony lists.
+- [x] **CEREM-010**: The system shall compute a ceremony's inventory needs as one item per pending badge plus one hiking stick per scout with a pending stick, counted across the scouts that ceremony lists who have earned their hiking stick.
 - [x] **CEREM-011**: The system shall flag an inventory kind as short for a ceremony when handing out that ceremony's needed quantity would leave the on-hand count below that kind's minimum reserve.
 - [x] **CEREM-012**: When an inventory kind is short for a ceremony, the system shall show the quantity to buy as the need plus the minimum reserve, less the on-hand count.
 - [x] **CEREM-013**: The system shall flag an inventory kind as short for a ceremony when its on-hand count is below its minimum reserve even where that ceremony needs none of that kind.
@@ -29,6 +30,7 @@
 - [x] **CEREM-015**: When the owner completes a ceremony, the system shall award every pending badge and pending stick to each scout included in that ceremony, using the same give and assign operations as single awards.
 - [x] **CEREM-016**: When the owner completes a ceremony, the system shall record one award snapshot per included scout who received at least one item, naming the badges given and whether a stick was given.
 - [x] **CEREM-017**: When the owner completes a ceremony, the system shall leave excluded scouts' pending awards untouched, so those scouts appear at the next ceremony.
+- [x] **CEREM-035**: When the owner completes a ceremony, the system shall give nothing to a scout who has not earned their hiking stick, leaving that scout's pending awards untouched.
 - [x] **CEREM-018**: When the owner completes a ceremony, the system shall mark that ceremony complete even where no scout received anything.
 - [x] **CEREM-019**: While a ceremony is complete, the system shall display that ceremony's title, date, and awards given, all read-only.
 - [x] **CEREM-020**: While a ceremony is complete and recorded no awards, the system shall say that no awards were given.

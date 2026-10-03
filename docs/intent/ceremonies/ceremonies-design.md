@@ -13,11 +13,13 @@ The central decision is that a ceremony holds no list of who is owed what. It st
 
 The second decision is that ceremony night is about attendance, not editing. Everyone with something pending is included by default; the owner's only job is to switch off the scouts who didn't show. Those scouts stay pending and turn up at the next ceremony on their own. The switch-offs are saved on the ceremony, so leaving the screen mid-evening doesn't undo them.
 
+The third decision is that the hiking stick comes first. A scout earns it at 10 cumulative miles (see [[award-derivation]]), and until then gets nothing at a ceremony: they are still listed with what they've earned, but their toggle is off and disabled. The ceremony that hands over their stick hands over everything else they're owed with it.
+
 ## Live Derivation
 
 `CeremonyDetailView.pendingScouts` (`:20-22`) filters active scouts on `hasPendingAwards`, which comes from [[award-derivation]]. Nothing is snapshotted at scheduling time.
 
-`ceremonyInventoryNeeds(scouts:hikes:)` counts, per `InventoryKind`, one item for every pending badge and one hiking stick per scout with a pending stick.
+`ceremonyInventoryNeeds(scouts:hikes:)` counts, per `InventoryKind`, one item for every pending badge and one hiking stick per scout with a pending stick. Scouts who haven't earned their stick are skipped, since they will receive nothing.
 
 `ceremonyShortfalls(needs:inventory:)` flags a kind when `count - need < minReserve` — below need *plus* reserve, a stricter test than `InventoryItem.isLow` (see [[inventory]]). Each shortfall carries `buy = need + minReserve - count`.
 
@@ -31,7 +33,7 @@ The second decision is that ceremony night is about attendance, not editing. Eve
 2. Snapshot a `CeremonyAward` per scout who actually received something, attached to the ceremony
 3. Mark the ceremony complete
 
-Scouts not passed in are untouched. The view supplies `pendingScouts.filter(ceremony.isIncluded)`, so toggling a scout off means they simply never enter the function.
+`completeCeremony` also skips any scout passed in who hasn't earned their stick, so the gate holds even if the view lets one through. Scouts not passed in are untouched. The view supplies `pendingScouts.filter(ceremony.isIncluded)`, so toggling a scout off means they simply never enter the function.
 
 `Ceremony.excludedScouts` is a one-way, nullify-on-delete relationship to the scouts the owner toggled off. `Ceremony.isIncluded(_:)` and `toggleExcluded(_:)` (`Ceremonies.swift`) read and write it, so an exclusion persists with the ceremony. A scout who is excluded and then no longer pending is simply not listed. The stale entry is harmless. Completion is per-scout all-or-nothing: there is no partial award within a scout.
 
@@ -57,6 +59,7 @@ It runs at app launch ([[app-shell]]) and on `CeremoniesView.onAppear`, which to
 |----------|--------|------------------------|-----------|
 | Ceremony contents | Live-derived every view | Snapshot at scheduling; editable list | A ceremony scheduled weeks ahead should include what is earned by the time it happens |
 | Scout inclusion | All pending, toggle off | Opt-in; per-badge selection | The realistic failure is a scout not showing up, not a scout getting the wrong badge |
+| Stick gate | Nothing handed out before the stick is earned (10 mi) | Hand out badges as earned | Pack rule: the stick is the first award, and badges follow it |
 | Award granularity | Per-scout all-or-nothing | Per-badge within a scout | A scout who is present receives everything they are owed |
 | Excluded scouts | Stay pending, reappear later | Mark deferred; carry to a named next ceremony | Falls out of live derivation with no extra state |
 | Exclusion storage | Persisted on the ceremony (`excludedScouts`) | View `@State` (previous) | Toggling off absent scouts shouldn't be undone by navigating away |
